@@ -186,6 +186,19 @@ function getTexImg(name){
 /* ============================================================ UI ============================================================ */
 const $=s=>document.querySelector(s);
 
+/* Safety net: if any wiring throws (e.g. a stale/mismatched file is deployed),
+   show a visible banner instead of failing silently with an empty list. */
+function showFatal(msg){
+  let bar=document.getElementById("fatalBar");
+  if(!bar){
+    bar=document.createElement("div"); bar.id="fatalBar";
+    bar.style.cssText="margin:16px 0;padding:12px 16px;border:1px solid #ff2d78;border-radius:8px;background:rgba(255,45,120,.08);color:#ff8db4;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.5";
+    const main=document.querySelector("main"); if(main) main.insertBefore(bar, main.firstChild);
+  }
+  bar.textContent="Something went wrong loading the tool: "+msg+". If you just deployed, the page and its script files may be out of sync, try a hard refresh (Ctrl+Shift+R).";
+}
+window.addEventListener("error",e=>{ showFatal(e.message||"script error"); });
+
 // ---- mode toggle (flat vs reference) ----
 $("#modeToggle").addEventListener("click",e=>{
   const btn=e.target.closest("button"); if(!btn)return;
