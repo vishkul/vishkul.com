@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vishkul/tools · marketing tools, built not bought</title>
+<meta name="description" content="A small suite of sharp, single-purpose marketing tools for the AI era, built by Vishesh Kulshrestha. Start with the AEO Checker: score how readable your site is to AI search.">
+<meta property="og:title" content="vishkul/tools">
+<meta property="og:description" content="Marketing tools, built not bought. Sharp single-purpose tools for the AI era.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  .hero { margin-top: 52px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  h1.title { font-family: var(--display); font-size: clamp(32px, 6vw, 50px); font-weight: 700; line-height: 1.04;
+    margin-top: 14px; letter-spacing: -0.035em; }
+  h1.title .pink { color: var(--accent); }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 58ch; line-height: 1.6; }
+
+  .ls { margin-top: 34px; }
+  .ls .term-body { padding: 18px 20px; font-size: 13.5px; line-height: 2; }
+  .ls .cmd { color: var(--text); }
+  .ls .cmd .prompt { color: var(--accent); margin-right: 8px; }
+  .ls .row { display: flex; gap: 14px; align-items: baseline; }
+  .ls .fname { color: var(--text); width: 168px; }
+  .ls .fname a { border-bottom: 1px dotted var(--border-2); }
+  .ls .fname a:hover { color: var(--accent); }
+  .ls .stat { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+  .ls .stat.live { color: var(--green); }
+  .ls .stat.soon { color: var(--dimmer); }
+  .ls .desc { color: var(--dim); font-size: 12.5px; }
+  @media (max-width:560px){ .ls .fname{ width: 120px; } .ls .desc{ display:none; } }
+
+  .ls .grp { color: var(--dimmer); font-size: 12px; margin-top: 12px; }
+  .cat-head { margin: 46px 0 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .cat-head .chp { color: var(--accent); font-family: var(--mono); font-weight: 700; }
+  .cat-head h2 { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -0.025em; }
+  .cat-head .cnt { font-family: var(--mono); font-size: 11px; color: var(--dimmer); }
+  .cat-sub { font-family: var(--body); font-size: 13.5px; color: var(--dimmer); margin: 7px 0 0; max-width: 58ch; line-height: 1.55; }
+  .cat-head { scroll-margin-top: 24px; }
+  .exp-zone { --accent: #a06bff; --accent-line: rgba(160,107,255,0.42); --accent-dim: rgba(160,107,255,0.13); }
+  .cards { margin-top: 18px; display: grid; gap: 16px; }
+  .card { border: 1px solid var(--border); border-radius: 11px; padding: 22px; background: var(--surface);
+    transition: border-color .15s, transform .15s; }
+  .card.live { border-left: 2px solid var(--accent); }
+  .card.live:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+  .card.soon { opacity: 0.72; }
+  .card-top { display: flex; align-items: center; gap: 12px; }
+  .card-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .card-name .dimmer { color: var(--dimmer); font-weight: 400; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; }
+  .tag.live { color: var(--green); background: rgba(70,224,160,0.12); }
+  .tag.soon { color: var(--dimmer); background: var(--surface-2); border: 1px solid var(--border); }
+  .card-desc { font-family: var(--body); margin-top: 12px; color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .card-out { margin-top: 12px; font-size: 12.5px; color: var(--dimmer); }
+  .card-out .arrow { color: var(--accent); }
+  .card-cta { margin-top: 18px; display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: #0a0a0f; font-weight: 700; font-size: 13.5px;
+    padding: 9px 16px; border-radius: 7px; transition: filter .15s; }
+  .card-cta:hover { filter: brightness(1.08); }
+  .card-soonnote { margin-top: 16px; font-size: 12px; color: var(--dimmer); }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width:560px){ .twocol { grid-template-columns: 1fr; } }
+
+  .about { font-family: var(--body); margin-top: 48px; padding: 22px; border: 1px solid var(--border); border-radius: 11px;
+    background: var(--surface); font-size: 14px; color: var(--dim); line-height: 1.7; }
+  .about b { color: var(--text); font-weight: 600; }
+  .about a { color: var(--accent); border-bottom: 1px dotted var(--accent-line); }
+
+  .footnote { margin: 40px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.8; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="hero">
+    <div class="kicker">// a small suite by Vishesh Kulshrestha</div>
+    <h1 class="title">Marketing tools,<br><span class="mark">built</span> not bought.</h1>
+    <p class="sub">Most marketers buy their stack. I build mine. Two kinds of tools live here: sharp marketing tools for the problems AI is creating right now, and a few experiments I built just to see if I could. All free, no signup, no AI under the hood.</p>
+  </header>
+
+  <section class="ls">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/<span class="accent">tools</span></span>
+      </div>
+      <div class="term-body">
+        <div class="cmd"><span class="prompt">$</span>ls tools/</div>
+        <div class="grp"># marketing</div>
+        <div class="row"><span class="fname"><a href="aeo.html" target="_blank" rel="noopener">aeo-checker/</a></span><span class="stat live">live</span><span class="desc">score your site's AI-search readability</span></div>
+        <div class="row"><span class="fname"><a href="brand-voice.html" target="_blank" rel="noopener">brand-voice/</a></span><span class="stat live">live</span><span class="desc">measure any site's voice from its copy</span></div>
+        <div class="row"><span class="fname"><a href="cold-email.html" target="_blank" rel="noopener">cold-email/</a></span><span class="stat live">live</span><span class="desc">teardown + rewrite for reply rate</span></div>
+        <div class="grp"># experiments</div>
+        <div class="row"><span class="fname"><a href="brand-from-word.html" target="_blank" rel="noopener">brand-from-a-word/</a></span><span class="stat live">live</span><span class="desc">one word in, a whole brand out</span></div>
+        <div class="row"><span class="fname"><a href="browser-x-ray.html" target="_blank" rel="noopener">browser-x-ray/</a></span><span class="stat live">live</span><span class="desc">what your browser leaks to every site</span></div>
+        <div class="row"><span class="fname"><a href="reverse-prompt.html" target="_blank" rel="noopener">reverse-prompt/</a></span><span class="stat live">live</span><span class="desc">guess the prompt behind any AI text</span></div>
+        <div class="row"><span class="fname"><a href="minecraft-blocks.html" target="_blank" rel="noopener">image-to-blocks/</a></span><span class="stat live">live</span><span class="desc">turn any image into Minecraft blocks</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cat-head" id="marketing"><span class="chp">$</span><h2>Marketing tools</h2><span class="cnt">3 live</span></div>
+  <p class="cat-sub">Sharp, single-purpose tools for the problems AI is creating in marketing right now. Each one does a single job well.</p>
+  <section class="cards">
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>aeo-checker</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">ChatGPT, Perplexity, and Claude are becoming the new front page. This scans any URL and scores how readable it is to those answer engines, then hands you a ranked list of fixes that actually move the needle.</p>
+      <div class="card-out"><span class="arrow">→</span> 0-100 score, grade, and priority fixes across crawler access, structured data, content clarity, and technical signals.</div>
+      <a class="card-cta" href="aeo.html" target="_blank" rel="noopener">Run a scan →</a>
+    </div>
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>brand-voice</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">Everyone claims their voice is "friendly and professional." This reads a site's actual copy and measures it: rhythm, formality, who it speaks to, energy, and the words it leans on. You get a profile to hand a writer or an AI, not a vibe.</p>
+      <div class="card-out"><span class="arrow">→</span> tone, sentence rhythm, perspective, signature vocabulary, do's and don'ts, plus a paste-ready prompt for full guidelines.</div>
+      <a class="card-cta" href="brand-voice.html" target="_blank" rel="noopener">Read a voice →</a>
+    </div>
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>cold-email</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">Paste a cold email and get an honest teardown: a reply-readiness score, exactly what's killing your reply rate, and a prompt to rewrite it. Runs entirely in your browser.</p>
+      <div class="card-out"><span class="arrow">→</span> reply-readiness score, what's working, ranked reply-rate killers, plus a paste-ready rewrite prompt.</div>
+      <a class="card-cta" href="cold-email.html" target="_blank" rel="noopener">Tear one down →</a>
+    </div>
+
+  </section>
+
+  <div class="exp-zone">
+  <div class="cat-head" id="experiments"><span class="chp">$</span><h2>Experiments</h2><span class="cnt">4 live</span></div>
+  <p class="cat-sub">Things I built because I couldn't not. Less useful, more fun, still no AI under the hood, just algorithms doing something you would not expect.</p>
+  <section class="cards">
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>brand-from-a-word</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">Type one word and watch an algorithm build a whole brand around it: a color palette, a font pairing, a logo mark, and a voice direction, generated live and explained. No AI, no stock library, pure procedural design.</p>
+      <div class="card-out"><span class="arrow">→</span> logo lockup, five-color palette, type pairing, voice line, and the reasoning behind each. Re-roll it endlessly.</div>
+      <a class="card-cta" href="brand-from-word.html" target="_blank" rel="noopener">Generate one →</a>
+    </div>
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>browser-x-ray</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">A privacy mirror: everything your browser quietly hands to every site you visit. Screen, GPU, installed fonts, battery, timezone, and more, with nothing ever leaving the page.</p>
+      <div class="card-out"><span class="arrow">→</span> a live fingerprint plus every signal it is built from, and how to shrink it.</div>
+      <a class="card-cta" href="browser-x-ray.html" target="_blank" rel="noopener">See yours →</a>
+    </div>
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>reverse-prompt</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">Paste AI-written text and it reconstructs the likely prompt behind it: the task, the tone, the format, the constraints. It cannot recover the real prompt, but it gets uncannily close.</p>
+      <div class="card-out"><span class="arrow">→</span> a reusable reconstructed prompt, the signals it read, and the AI tells it spotted.</div>
+      <a class="card-cta" href="reverse-prompt.html" target="_blank" rel="noopener">Reverse one →</a>
+    </div>
+
+    <div class="card live">
+      <div class="card-top">
+        <span class="card-name"><span class="dimmer">$ ./</span>image-to-blocks</span>
+        <span class="tag live">● LIVE</span>
+      </div>
+      <p class="card-desc">Drop in any image and it gets colour-matched, cell by cell, against a palette of real Minecraft blocks with verified colours. Exact block counts for flat builds like pixel art, or a matched material palette for building a 3D thing from a reference photo. No AI, no API, just colour maths against a hand-checked block list.</p>
+      <div class="card-out"><span class="arrow">→</span> a block-by-block map, exact quantities and stack counts, close alternatives per block, and Creative or stage-gated Survival palettes.</div>
+      <a class="card-cta" href="minecraft-blocks.html" target="_blank" rel="noopener">Build one →</a>
+    </div>
+
+  </section>
+  </div>
+
+  <section class="about">
+    <b>Why I build these.</b> I'm a final-year commerce student who'd rather ship a tool than write a deck about one. I taught myself to build by shipping an autonomous AI agent in eight days with no coding background, grew a YouTube channel to 10K subscribers, and run real marketing campaigns. This suite is where the two halves meet. If you're hiring for marketing, growth, or an AI-GTM role, <a href="https://www.vishkul.com">here's the full portfolio</a>.
+  </section>
+
+  <p class="footnote">
+    Built by Vishesh Kulshrestha · Bengaluru · <a href="mailto:vishkul2905@gmail.com">vishkul2905@gmail.com</a>
+    <br><a href="https://www.vishkul.com">vishkul.com</a> · nothing here is stored; tools read live pages once and forget them.
+  </p>
+
+</div>
+</body>
+</html>

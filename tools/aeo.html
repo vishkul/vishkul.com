@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEO Checker · Is your site readable by AI search? · vishkul/tools</title>
+<meta name="description" content="Paste a URL and see how readable your website is to AI answer engines like ChatGPT, Perplexity, and Claude, plus a prioritized list of fixes.">
+<meta property="og:title" content="AEO Checker · Is your site readable by AI search?">
+<meta property="og:description" content="Score your website's visibility to AI answer engines, and get the exact fixes that matter.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  h1.title {
+    font-family: var(--display);
+    font-size: clamp(28px, 5.4vw, 42px); font-weight: 700; line-height: 1.05;
+    margin-top: 16px; letter-spacing: -0.035em;
+  }
+  h1.title .pink { color: var(--accent); }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 60ch; line-height: 1.6; }
+
+  /* input row */
+  .scanbox { margin-top: 26px; }
+  .inputline { display: flex; align-items: stretch; gap: 0;
+    border: 1px solid var(--border-2); border-radius: 9px; overflow: hidden;
+    background: var(--surface); transition: border-color .15s; }
+  .inputline:focus-within { border-color: var(--accent); }
+  .inputline .sigil { display: flex; align-items: center; padding: 0 4px 0 16px; color: var(--green); font-weight: 600; }
+  .inputline input {
+    flex: 1; background: transparent; border: none; color: var(--text);
+    font-family: var(--mono); font-size: 15px; padding: 15px 12px; outline: none; min-width: 0;
+  }
+  .inputline input::placeholder { color: var(--dimmer); }
+  .inputline button {
+    background: var(--accent); color: #0a0a0f; border: none; font-family: var(--mono);
+    font-weight: 700; font-size: 14px; padding: 0 22px; cursor: pointer; white-space: nowrap;
+    transition: filter .15s; letter-spacing: -0.01em;
+  }
+  .inputline button:hover { filter: brightness(1.08); }
+  .inputline button:disabled { filter: grayscale(0.4) brightness(0.7); cursor: default; }
+
+  .examples { margin-top: 12px; font-size: 12px; color: var(--dimmer); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .examples .chip { color: var(--dim); cursor: pointer; border-bottom: 1px dotted var(--border-2); transition: color .15s; }
+  .examples .chip:hover { color: var(--accent); }
+
+  /* diagnostic readout */
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  .diag .line .er { color: var(--red); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent);
+    vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+  /* report */
+  #report { margin-top: 28px; display: none; }
+  .scorecard {
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface);
+  }
+  .score-top { padding: 26px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .score-num { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+  .score-num span { font-size: 22px; color: var(--dimmer); font-weight: 500; }
+  .score-meta { flex: 1; min-width: 180px; }
+  .grade-badge { display: inline-block; padding: 3px 11px; border-radius: 6px; font-weight: 700;
+    font-size: 13px; letter-spacing: 0.02em; }
+  .verdict { font-family: var(--body); margin-top: 8px; font-size: 16px; font-weight: 500; }
+  .checked-url { margin-top: 6px; font-size: 12px; color: var(--dimmer); word-break: break-all; }
+  .track { height: 7px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .track > i { display: block; height: 100%; border-radius: 4px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+
+  .cats { border-top: 1px solid var(--border); }
+  details.cat { border-bottom: 1px solid var(--border); }
+  details.cat:last-child { border-bottom: none; }
+  details.cat > summary {
+    list-style: none; cursor: pointer; padding: 15px 24px; display: flex; align-items: center; gap: 14px;
+  }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  .cat-name { flex: 0 0 auto; font-size: 13.5px; font-weight: 500; width: 168px; }
+  .cat-bar { flex: 1; height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .cat-bar > i { display: block; height: 100%; }
+  .cat-pts { flex: 0 0 auto; font-size: 12.5px; color: var(--dim); width: 52px; text-align: right; }
+  .cat-caret { color: var(--dimmer); font-size: 11px; transition: transform .15s; }
+  details.cat[open] .cat-caret { transform: rotate(90deg); }
+  .checks { padding: 2px 24px 16px 24px; }
+  .check { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; align-items: baseline; }
+  .check .tag { flex: 0 0 auto; font-size: 11px; font-weight: 700; width: 46px; }
+  .check .tag.pass { color: var(--green); }
+  .check .tag.warn { color: var(--amber); }
+  .check .tag.fail { color: var(--red); }
+  .check .ctext b { font-weight: 600; }
+  .check .cdetail { color: var(--dimmer); }
+  @media (max-width:560px){ .cat-name{ width: 120px; font-size: 12.5px; } .cat-pts{ width: 44px; } }
+
+  /* fixes */
+  .fixes-head { margin-top: 34px; display: flex; align-items: baseline; gap: 10px; }
+  .fixes-head h2 { font-size: 16px; font-weight: 600; }
+  .fixes-head .count { font-size: 12px; color: var(--dimmer); }
+  .fix {
+    margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--amber);
+    border-radius: 8px; padding: 14px 16px; background: var(--surface);
+  }
+  .fix.fail { border-left-color: var(--red); }
+  .fix-top { display: flex; align-items: center; gap: 10px; }
+  .fix-pill { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; }
+  .fix-pill.warn { color: var(--amber); background: rgba(255,193,77,0.12); }
+  .fix-pill.fail { color: var(--red); background: rgba(255,93,108,0.12); }
+  .fix-label { font-family: var(--body); font-size: 14.5px; font-weight: 600; }
+  .fix-impact { margin-left: auto; font-size: 11px; color: var(--dimmer); }
+  .fix-body { font-family: var(--body); margin-top: 8px; font-size: 13.5px; color: var(--dim); line-height: 1.65; }
+
+  .allgood { margin-top: 16px; padding: 18px; border: 1px solid var(--border); border-left: 2px solid var(--green);
+    border-radius: 8px; color: var(--green); font-size: 14px; background: var(--surface); }
+
+  .errbox { margin-top: 26px; border: 1px solid var(--border); border-left: 2px solid var(--red);
+    border-radius: 8px; padding: 16px 18px; background: var(--surface); display: none; }
+  .errbox .er { color: var(--red); font-weight: 600; font-size: 14px; }
+  .errbox .ed { color: var(--dim); font-size: 13px; margin-top: 6px; }
+
+  .footnote { margin: 44px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+
+  .rescan { margin-top: 22px; font-size: 13px; }
+  .rescan a { color: var(--accent); cursor: pointer; border-bottom: 1px dotted var(--accent-line); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// answer-engine optimization</div>
+    <h1 class="title">Can AI search<br>actually <span class="mark">read</span> your site?</h1>
+    <p class="sub">ChatGPT, Perplexity, and Claude now answer questions your customers used to Google. If your site isn't structured for them, you're invisible in those answers. Paste a URL. Get a readability score and the exact fixes that move it.</p>
+  </header>
+
+  <section class="scanbox">
+    <div class="inputline">
+      <span class="sigil">$</span>
+      <input id="url" type="text" inputmode="url" autocomplete="off" spellcheck="false"
+             placeholder="yoursite.com" aria-label="Website URL to scan">
+      <button id="run" type="button">Run scan</button>
+    </div>
+    <div class="examples">
+      <span>try:</span>
+      <span class="chip" data-url="stripe.com">stripe.com</span>
+      <span class="chip" data-url="vercel.com">vercel.com</span>
+      <span class="chip" data-url="notion.so">notion.so</span>
+      <span class="dimmer">·</span>
+      <span class="chip" id="demoLink">see a sample report</span>
+    </div>
+  </section>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">aeo-checker</span></span>
+      </div>
+      <div class="term-body">
+        <div class="diag" id="diag"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errbox">
+    <div class="er" id="errTitle"></div>
+    <div class="ed" id="errDetail"></div>
+  </div>
+
+  <section id="report"></section>
+
+  <p class="footnote">
+    Every check is a concrete, verifiable signal (crawler access, structured data, content clarity, technical hygiene), not an AI guessing. Nothing is stored; each scan reads the live page once.
+    <br>Built by <a href="https://www.vishkul.com">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const urlInput = $("#url"), runBtn = $("#run");
+const consoleEl = $("#console"), diagEl = $("#diag");
+const reportEl = $("#report"), errBox = $("#errbox");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const STEPS = [
+  (u) => `<span class="ar">→</span> resolving <b>${esc(u)}</b>`,
+  ()  => `<span class="ar">→</span> fetching page`,
+  ()  => `<span class="ar">→</span> reading robots.txt + llms.txt`,
+  ()  => `<span class="ar">→</span> checking AI crawler access`,
+  ()  => `<span class="ar">→</span> scanning structured data`,
+  ()  => `<span class="ar">→</span> analyzing content clarity`,
+  ()  => `<span class="ar">→</span> checking technical signals`,
+  ()  => `<span class="ar">→</span> compiling report`,
+];
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function colorFor(grade){ return (grade==="A"||grade==="B") ? "var(--green)" : grade==="C" ? "var(--amber)" : "var(--red)"; }
+function gradeBg(grade){
+  if (grade==="A"||grade==="B") return "background:rgba(70,224,160,0.14);color:var(--green)";
+  if (grade==="C") return "background:rgba(255,193,77,0.14);color:var(--amber)";
+  return "background:rgba(255,93,108,0.14);color:var(--red)";
+}
+
+let busy = false;
+function startScan(raw){
+  const u = (raw || urlInput.value || "").trim();
+  if (!u || busy) return;
+  busy = true; runBtn.disabled = true;
+  errBox.style.display = "none";
+  reportEl.style.display = "none";
+  reportEl.innerHTML = "";
+  consoleEl.style.display = "block";
+  diagEl.innerHTML = "";
+
+  // kick off the real request immediately
+  const fetchPromise = fetch("/api/analyze?url=" + encodeURIComponent(u))
+    .then(async r => ({ ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }))
+    .catch(e => ({ ok: false, status: 0, data: { error: "Network error. Couldn't start the scan.", detail: String(e) } }));
+
+  revealSteps(u, fetchPromise);
+}
+
+async function revealSteps(u, fetchPromise){
+  const delay = reduceMotion ? 0 : 165;
+  for (let i = 0; i < STEPS.length; i++){
+    const line = document.createElement("div");
+    line.className = "line";
+    line.innerHTML = STEPS[i](u);
+    diagEl.appendChild(line);
+    if (delay) await new Promise(r => setTimeout(r, delay));
+  }
+  const cur = document.createElement("span");
+  cur.className = "cursor";
+  diagEl.appendChild(cur);
+
+  const res = await fetchPromise;
+  cur.remove();
+
+  if (!res.ok || res.data.error){
+    const msg = res.data.error || ("Request failed (HTTP " + res.status + ").");
+    const fail = document.createElement("div");
+    fail.className = "line";
+    fail.innerHTML = `<span class="er">✕ ${esc(msg)}</span>`;
+    diagEl.appendChild(fail);
+    showError(msg, res.data.detail);
+  } else {
+    const done = document.createElement("div");
+    done.className = "line";
+    done.innerHTML = `<span class="ok">✓ done</span> <span class="dimmer">· ${res.data.score}/100</span>`;
+    diagEl.appendChild(done);
+    renderReport(res.data);
+  }
+  busy = false; runBtn.disabled = false;
+}
+
+function showError(title, detail){
+  $("#errTitle").textContent = title;
+  $("#errDetail").textContent = detail ? ("details: " + detail) : "Try the full URL of a live, public page (some sites block automated requests).";
+  errBox.style.display = "block";
+}
+
+function renderReport(r){
+  const col = colorFor(r.grade);
+  const catColors = { };
+  let cats = r.categories.map(c => {
+    const pct = Math.round((c.points / c.max) * 100);
+    const cc = pct >= 80 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--red)";
+    const checks = c.checks.map(ch => `
+      <div class="check">
+        <span class="tag ${ch.status}">${ch.status === "pass" ? "[ ok ]" : ch.status === "warn" ? "[warn]" : "[FAIL]"}</span>
+        <span class="ctext"><b>${esc(ch.label)}</b>${ch.detail ? ` <span class="cdetail">· ${esc(ch.detail)}</span>` : ""}</span>
+      </div>`).join("");
+    return `
+      <details class="cat">
+        <summary>
+          <span class="cat-name">${esc(c.name)}</span>
+          <span class="cat-bar"><i style="width:${pct}%;background:${cc}"></i></span>
+          <span class="cat-pts">${c.points}/${c.max}</span>
+          <span class="cat-caret">▶</span>
+        </summary>
+        <div class="checks">${checks}</div>
+      </details>`;
+  }).join("");
+
+  let fixesHtml;
+  if (!r.fixes.length){
+    fixesHtml = `<div class="allgood">✓ No major issues found. This page is in strong shape for AI search.</div>`;
+  } else {
+    fixesHtml = [...r.fixes].sort((a,b)=>b.lost-a.lost).map(f => `
+      <div class="fix ${f.status}">
+        <div class="fix-top">
+          <span class="fix-pill ${f.status}">${f.status === "fail" ? "FAIL" : "IMPROVE"}</span>
+          <span class="fix-label">${esc(f.label)}</span>
+          <span class="fix-impact">+${f.lost} pts</span>
+        </div>
+        <div class="fix-body">${esc(f.fix)}</div>
+      </div>`).join("");
+  }
+
+  reportEl.innerHTML = `
+    <div class="scorecard">
+      <div class="score-top">
+        <div class="score-num" style="color:${col}">${r.score}<span>/100</span></div>
+        <div class="score-meta">
+          <span class="grade-badge" style="${gradeBg(r.grade)}">GRADE ${r.grade}</span>
+          <div class="verdict" style="color:${col}">${esc(r.verdict)}</div>
+          <div class="checked-url">scanned: ${esc(r.url)}</div>
+        </div>
+      </div>
+      <div style="padding:0 24px 22px"><div class="track"><i style="width:${r.score}%;background:${col}"></i></div></div>
+      <div class="cats">${cats}</div>
+    </div>
+
+    <div class="fixes-head">
+      <h2>Priority fixes</h2>
+      <span class="count">${r.fixes.length ? r.fixes.length + " ranked by impact" : "all clear"}</span>
+    </div>
+    ${fixesHtml}
+
+    <div class="rescan"><a onclick="window.scrollTo({top:0,behavior:'smooth'});setTimeout(()=>document.querySelector('#url').focus(),300)">↑ scan another site</a></div>
+  `;
+  reportEl.style.display = "block";
+  reportEl.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
+// ---- sample / demo report (so visitors see output without typing) ----
+const SAMPLE = {
+  url: "https://example-startup.com",
+  score: 58, maxScore: 100, grade: "C", verdict: "Visible, with real gaps",
+  categories: [
+    { name: "AI Crawler Access", points: 15, max: 25, checks: [
+      { label: "AI crawlers can access the page", status: "pass", detail: "robots.txt does not block major AI crawlers." },
+      { label: "llms.txt present", status: "warn", detail: "No llms.txt found." }
+    ]},
+    { name: "Structured Data", points: 4, max: 25, checks: [
+      { label: "Schema.org structured data (JSON-LD)", status: "fail", detail: "No JSON-LD structured data found." },
+      { label: "Recognized schema types", status: "fail", detail: "No recognized schema types." },
+      { label: "FAQ structured data", status: "warn", detail: "No FAQ schema found." }
+    ]},
+    { name: "Content Clarity", points: 21, max: 25, checks: [
+      { label: "Page title", status: "pass", detail: '"Example: the all-in-one platform"' },
+      { label: "Meta description", status: "pass", detail: "Present and well-sized." },
+      { label: "Single clear H1", status: "pass", detail: "Exactly one H1." },
+      { label: "Heading structure", status: "warn", detail: "Only one H2." },
+      { label: "Readable text content", status: "pass", detail: "~640 words of real HTML text." }
+    ]},
+    { name: "Technical Signals", points: 18, max: 25, checks: [
+      { label: "Open Graph tags", status: "pass", detail: "og:title and og:description present." },
+      { label: "Semantic HTML", status: "pass", detail: "4 semantic landmark tags used." },
+      { label: "Lists for scannable facts", status: "warn", detail: "Little or no list content." },
+      { label: "Image alt text", status: "warn", detail: "Only 2/7 images have alt text." }
+    ]}
+  ],
+  fixes: [
+    { label: "Schema.org structured data (JSON-LD)", status: "fail", lost: 10, fix: "Add Schema.org JSON-LD markup. This is the single highest-impact AEO fix: it hands AI engines clean, structured facts instead of making them guess from prose. Start with an Organization or WebSite schema." },
+    { label: "Recognized schema types", status: "fail", lost: 8, fix: "Once you add JSON-LD, declare a clear @type (Organization for a company site, Product for a product, etc.) so AI knows what kind of thing it's looking at." },
+    { label: "FAQ structured data", status: "warn", lost: 7, fix: "Add FAQPage schema with a few real questions your customers ask. AI answer engines (ChatGPT, Perplexity) preferentially surface FAQ content because it maps cleanly to how people ask questions. This is one of the most effective ways to get quoted." },
+    { label: "llms.txt present", status: "warn", lost: 10, fix: "Add an /llms.txt file (the emerging standard, like robots.txt but for LLMs). It's a plain-text map pointing AI tools to your most important pages and a short description of what you do. Easy win that signals you're current." },
+    { label: "Lists for scannable facts", status: "warn", lost: 6, fix: "Present features, steps, or specs as bullet or numbered lists where it fits. AI answer engines lift list items cleanly into responses." },
+    { label: "Image alt text", status: "warn", lost: 6, fix: "Add descriptive alt text to your images. It's content AI can actually read, and it's the only way visual information reaches text-based crawlers." },
+    { label: "Heading structure", status: "warn", lost: 2, fix: "Break content into a few H2 sections so AI can locate and lift the right answer." }
+  ],
+  meta: { title: "Example: the all-in-one platform", wordCount: 640, hasRobots: true, hasLlms: false }
+};
+
+function runDemo(){
+  errBox.style.display = "none";
+  consoleEl.style.display = "block";
+  diagEl.innerHTML = "";
+  busy = true; runBtn.disabled = true;
+  const fake = Promise.resolve({ ok: true, status: 200, data: SAMPLE });
+  revealSteps(SAMPLE.url.replace("https://",""), fake);
+}
+
+// ---- wiring ----
+runBtn.addEventListener("click", () => startScan());
+urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startScan(); });
+document.querySelectorAll(".chip[data-url]").forEach(c =>
+  c.addEventListener("click", () => { urlInput.value = c.dataset.url; startScan(c.dataset.url); }));
+$("#demoLink").addEventListener("click", runDemo);
+
+// allow ?demo=1 or ?url=... deep links
+const params = new URLSearchParams(location.search);
+if (params.get("demo")) runDemo();
+else if (params.get("url")) { urlInput.value = params.get("url"); startScan(params.get("url")); }
+</script>
+</body>
+</html>

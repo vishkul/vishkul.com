@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser X-ray · what your browser leaks · vishkul/tools</title>
+<meta name="description" content="Every site you visit silently reads your screen, GPU, fonts, hardware, and more, then fingerprints you with no cookies needed. This shows you exactly what leaks. Nothing leaves your browser.">
+<meta property="og:title" content="Browser X-ray · vishkul/tools">
+<meta property="og:description" content="See everything your browser quietly hands to every site you visit. Nothing leaves the page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  /* Experiment -> violet accent */
+  :root { --accent: #a06bff; --accent-line: rgba(160,107,255,0.42); --accent-dim: rgba(160,107,255,0.13); }
+
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  .kicker .lab { color: var(--dimmer); }
+  h1.title { font-family: var(--display); font-size: clamp(28px, 5.4vw, 42px); font-weight: 700; line-height: 1.05; margin-top: 16px; letter-spacing: -0.035em; }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 60ch; line-height: 1.6; }
+
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+
+  #report { margin-top: 28px; display: none; }
+  .report-anim { animation: rise .4s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .fpcard { border: 1px solid var(--accent-line); border-radius: 14px; background: linear-gradient(180deg, var(--accent-dim), transparent); padding: 26px 28px; }
+  .fp-tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+  .fp-hash { font-family: var(--mono); font-size: clamp(26px, 6vw, 40px); font-weight: 700; color: var(--text); letter-spacing: 0.02em; margin-top: 8px; word-break: break-all; }
+  .fp-sys { font-family: var(--mono); font-size: 13px; color: var(--dim); margin-top: 10px; }
+  .fp-note { font-family: var(--body); font-size: 13.5px; color: var(--dim); line-height: 1.6; margin-top: 14px; max-width: 64ch; }
+  .fp-note b { color: var(--text); font-weight: 600; }
+
+  .grid { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width:680px){ .grid { grid-template-columns: 1fr; } }
+  .dcard { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 16px 18px; }
+  .dcard.span { grid-column: 1 / -1; }
+  .dc-head { font-family: var(--display); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .dc-head .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .kv { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid var(--border); }
+  .kv:nth-child(2) { border-top: none; padding-top: 12px; }
+  .kv .k { font-family: var(--body); color: var(--dim); font-size: 13px; flex: 0 0 auto; }
+  .kv .v { font-family: var(--mono); color: var(--text); font-size: 12.5px; text-align: right; word-break: break-word; }
+  .kv .v.faint { color: var(--dimmer); }
+
+  .fontlist { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .fontlist .ft { font-family: var(--mono); font-size: 11px; color: var(--dim); border: 1px solid var(--border-2); border-radius: 5px; padding: 3px 8px; }
+  .fontcount { font-family: var(--mono); font-size: 12.5px; color: var(--accent); margin-top: 12px; }
+
+  .ua-block { margin-top: 12px; font-family: var(--mono); font-size: 11.5px; color: var(--dimmer); line-height: 1.5; word-break: break-word; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+
+  .closing { margin-top: 28px; border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 10px; background: var(--surface); padding: 18px 20px; }
+  .closing h3 { font-family: var(--display); font-size: 16px; font-weight: 600; }
+  .closing p { font-family: var(--body); font-size: 13.5px; color: var(--dim); line-height: 1.6; margin-top: 8px; max-width: 66ch; }
+  .closing .tips { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .closing .tips .t { font-family: var(--body); font-size: 13px; color: var(--dim); display: flex; gap: 9px; line-height: 1.5; }
+  .closing .tips .t .m { color: var(--accent); flex: 0 0 auto; }
+
+  .controls { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .controls button { font-family: var(--mono); font-weight: 600; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 10px 16px; transition: all .15s; background: var(--surface); color: var(--dim); border: 1px solid var(--border-2); }
+  .controls button:hover { color: var(--accent); border-color: var(--accent-line); }
+  .controls button.done { color: var(--green); border-color: var(--green); }
+
+  .footnote { margin: 40px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// browser x-ray <span class="lab">· experiment</span></div>
+    <h1 class="title">Your browser is<br><span class="mark">telling</span> on you.</h1>
+    <p class="sub">You did not click anything. You did not grant a permission. Yet the moment this page loaded, your browser handed over everything below, the same way it does for every site you have ever visited. Here is what leaks, and the fingerprint they build from it. None of it leaves this page.</p>
+  </header>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">browser-x-ray</span></span>
+      </div>
+      <div class="term-body"><div class="diag" id="diag"></div></div>
+    </div>
+  </section>
+
+  <section id="report"></section>
+
+  <p class="footnote">
+    This runs entirely in your browser. Nothing is sent anywhere, logged, or stored. Your IP and rough location go to every server you talk to as well, but this page never even asks for them, because that is the whole point.
+    <br>Built by <a href="/">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+function cyrb(str){ let h1=0xdeadbeef,h2=0x41c6ce57;
+  for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);
+  return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0');
+}
+function getGPU(){
+  try{
+    const c=document.createElement('canvas');
+    const gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+    if(!gl) return {vendor:'n/a', renderer:'WebGL unavailable'};
+    const dbg=gl.getExtension('WEBGL_debug_renderer_info');
+    if(!dbg) return {vendor:String(gl.getParameter(gl.VENDOR)), renderer:String(gl.getParameter(gl.RENDERER))};
+    return {vendor:String(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)), renderer:String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL))};
+  }catch(e){ return {vendor:'n/a', renderer:'blocked'}; }
+}
+function canvasFP(){
+  try{
+    const c=document.createElement('canvas'); c.width=250; c.height=60;
+    const ctx=c.getContext('2d'); ctx.textBaseline='top';
+    ctx.font="16px 'Arial'"; ctx.fillStyle='#f60'; ctx.fillRect(2,2,118,22);
+    ctx.fillStyle='#089'; ctx.fillText('fingerprint \u{1F512} 0123',4,4);
+    ctx.fillStyle='rgba(102,204,0,0.6)'; ctx.fillText('fingerprint \u{1F512} 0123',6,8);
+    return cyrb(c.toDataURL()).slice(0,12);
+  }catch(e){ return 'blocked'; }
+}
+function detectFonts(){
+  try{
+    const base=['monospace','sans-serif','serif'], test='mmmmmmmmmmlli', size='72px';
+    const span=document.createElement('span'); span.setAttribute('aria-hidden','true');
+    span.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;font-size:'+size+';';
+    span.textContent=test; document.body.appendChild(span);
+    const bw={}, bh={};
+    base.forEach(b=>{ span.style.fontFamily=b; bw[b]=span.offsetWidth; bh[b]=span.offsetHeight; });
+    const cands=['Arial','Helvetica','Times New Roman','Courier New','Georgia','Verdana','Tahoma','Trebuchet MS','Comic Sans MS','Impact','Calibri','Cambria','Consolas','Segoe UI','Roboto','Arial Black','Palatino Linotype','Lucida Console','Garamond','Franklin Gothic Medium','Century Gothic','Candara','Optima','Futura','Gill Sans','Baskerville','American Typewriter','Andale Mono','Menlo','Monaco','Geneva','Helvetica Neue','Noto Sans','Ubuntu','Cantarell','DejaVu Sans','San Francisco','Courier','Lucida Grande','MS Gothic'];
+    const found=[];
+    cands.forEach(f=>{ for(const b of base){ span.style.fontFamily="'"+f+"',"+b; if(span.offsetWidth!==bw[b]||span.offsetHeight!==bh[b]){ found.push(f); break; } } });
+    document.body.removeChild(span);
+    return found;
+  }catch(e){ return []; }
+}
+function parseUA(ua){
+  let os='Unknown', br='Unknown';
+  if(/Windows NT 10/.test(ua))os='Windows 10/11'; else if(/Windows/.test(ua))os='Windows'; else if(/Mac OS X/.test(ua))os='macOS'; else if(/Android/.test(ua))os='Android'; else if(/(iPhone|iPad|iPod)/.test(ua))os='iOS'; else if(/CrOS/.test(ua))os='ChromeOS'; else if(/Linux/.test(ua))os='Linux';
+  if(/Edg\//.test(ua))br='Edge'; else if(/OPR\//.test(ua))br='Opera'; else if(/Firefox\//.test(ua))br='Firefox'; else if(/Chrome\//.test(ua))br='Chrome'; else if(/Safari\//.test(ua))br='Safari';
+  return os+' · '+br;
+}
+async function gather(){
+  const nav=navigator, scr=screen;
+  const gpu=getGPU(), fonts=detectFonts(), cfp=canvasFP();
+  let tz='n/a'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
+  const off=-new Date().getTimezoneOffset(); const offStr='UTC'+(off>=0?'+':'')+(off/60);
+  let battery=null;
+  try{ if(nav.getBattery){ const b=await Promise.race([nav.getBattery(), new Promise(r=>setTimeout(()=>r(null),600))]); if(b&&typeof b.level==='number') battery={level:Math.round(b.level*100), charging:b.charging}; } }catch(e){}
+  const conn=nav.connection||nav.mozConnection||nav.webkitConnection;
+  const ua=nav.userAgent||'n/a';
+  const data={
+    sys: parseUA(ua),
+    screen:{ res:Math.round(scr.width*(window.devicePixelRatio||1))+' × '+Math.round(scr.height*(window.devicePixelRatio||1)), avail:scr.availWidth+' × '+scr.availHeight, win:window.innerWidth+' × '+window.innerHeight, depth:scr.colorDepth+'-bit color', dpr:String(window.devicePixelRatio||1) },
+    hw:{ platform:((nav.userAgentData&&nav.userAgentData.platform)?nav.userAgentData.platform:(nav.platform||'n/a')), cores:(nav.hardwareConcurrency?nav.hardwareConcurrency+' threads':'not exposed'), mem:(nav.deviceMemory?nav.deviceMemory+' GB+':'not exposed'), touch:((nav.maxTouchPoints||0)>0? nav.maxTouchPoints+' points':'no touch') },
+    gpu,
+    loc:{ tz, offset:offStr, time:new Date().toLocaleString(), lang:nav.language||'n/a', langs:(nav.languages||[]).join(', ')||'n/a' },
+    fonts, cfp, battery,
+    conn: conn?{ type:(conn.effectiveType||'n/a'), down:(conn.downlink!=null?conn.downlink+' Mbps':'n/a'), rtt:(conn.rtt!=null?conn.rtt+' ms':'n/a') }:null,
+    flags:{ cookies:(nav.cookieEnabled?'enabled':'disabled'), dnt:(nav.doNotTrack==='1'?'requested':(nav.doNotTrack==='0'?'off':'not set')), referrer:(document.referrer||'(direct visit)') },
+    ua
+  };
+  const sig=[ua,data.screen.res,data.screen.depth,data.screen.dpr,gpu.vendor,gpu.renderer,tz,data.loc.langs,data.hw.cores,data.hw.mem,fonts.join(','),cfp].join('|');
+  data.fingerprint=cyrb(sig);
+  return data;
+}
+
+const $ = (s)=>document.querySelector(s);
+const consoleEl=$("#console"), diagEl=$("#diag"), reportEl=$("#report");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const STEPS=[
+  ()=>`<span class="ar">→</span> reading your screen and display`,
+  ()=>`<span class="ar">→</span> probing your graphics card`,
+  ()=>`<span class="ar">→</span> measuring your installed fonts`,
+  ()=>`<span class="ar">→</span> checking device, timezone, network`,
+  ()=>`<span class="ar">→</span> computing your fingerprint`,
+];
+
+async function run(){
+  consoleEl.style.display="block"; diagEl.innerHTML="";
+  reportEl.style.display="none"; reportEl.innerHTML="";
+  const data = await gather();
+  const delay = reduceMotion ? 0 : 150;
+  for(let i=0;i<STEPS.length;i++){
+    const line=document.createElement("div"); line.className="line"; line.innerHTML=STEPS[i]();
+    diagEl.appendChild(line);
+    if(delay) await new Promise(r=>setTimeout(r,delay));
+  }
+  const cur=document.createElement("span"); cur.className="cursor"; diagEl.appendChild(cur);
+  if(delay) await new Promise(r=>setTimeout(r,180));
+  cur.remove();
+  const d=document.createElement("div"); d.className="line"; d.innerHTML=`<span class="ok">✓ exposed</span>`;
+  diagEl.appendChild(d);
+  render(data);
+}
+
+function kv(k,v,faint){ return `<div class="kv"><span class="k">${k}</span><span class="v${faint?' faint':''}">${esc(v)}</span></div>`; }
+
+function render(data){
+  const d=data;
+  const fontsShown = d.fonts.slice(0,14).map(f=>`<span class="ft">${esc(f)}</span>`).join("");
+  const connCard = d.conn ? `
+    <div class="dcard">
+      <div class="dc-head"><span class="dot"></span>Connection</div>
+      ${kv("Type", d.conn.type)}${kv("Downlink", d.conn.down)}${kv("Latency", d.conn.rtt)}
+    </div>` : "";
+  const batteryRow = d.battery ? kv("Battery", d.battery.level+"%"+(d.battery.charging?" (charging)":"")) : "";
+
+  reportEl.innerHTML = `
+  <div class="report-anim">
+    <div class="fpcard">
+      <div class="fp-tag">your browser fingerprint</div>
+      <div class="fp-hash">${esc(d.fingerprint)}</div>
+      <div class="fp-sys">${esc(d.sys)} · canvas ${esc(d.cfp)}</div>
+      <div class="fp-note">This ID is built from every detail below. <b>Reload the page and it stays exactly the same.</b> The rarer your combination of screen, GPU, fonts, and settings, the more it singles you out. Trackers use precisely this to recognize you across sites with no cookies and no login.</div>
+    </div>
+
+    <div class="grid">
+      <div class="dcard">
+        <div class="dc-head"><span class="dot"></span>Display</div>
+        ${kv("Screen", d.screen.res)}${kv("Available", d.screen.avail)}${kv("Window", d.screen.win)}${kv("Color", d.screen.depth)}${kv("Pixel ratio", d.screen.dpr)}
+      </div>
+      <div class="dcard">
+        <div class="dc-head"><span class="dot"></span>Device</div>
+        ${kv("Platform", d.hw.platform)}${kv("CPU", d.hw.cores)}${kv("Memory", d.hw.mem)}${kv("Touch", d.hw.touch)}${batteryRow}
+      </div>
+      <div class="dcard span">
+        <div class="dc-head"><span class="dot"></span>Graphics card</div>
+        ${kv("Vendor", d.gpu.vendor)}${kv("Renderer", d.gpu.renderer)}
+      </div>
+      <div class="dcard">
+        <div class="dc-head"><span class="dot"></span>Location &amp; time</div>
+        ${kv("Timezone", d.loc.tz)}${kv("Offset", d.loc.offset)}${kv("Local time", d.loc.time)}${kv("Language", d.loc.lang)}${kv("Accepted", d.loc.langs)}
+      </div>
+      <div class="dcard">
+        <div class="dc-head"><span class="dot"></span>Tracking flags</div>
+        ${kv("Cookies", d.flags.cookies)}${kv("Do Not Track", d.flags.dnt)}${kv("Came from", d.flags.referrer, true)}
+        ${connCard? "" : ""}
+      </div>
+      ${connCard}
+      <div class="dcard span">
+        <div class="dc-head"><span class="dot"></span>Installed fonts</div>
+        <div class="fontcount">${d.fonts.length} fonts detected on your system</div>
+        <div class="fontlist">${fontsShown}${d.fonts.length>14?`<span class="ft">+${d.fonts.length-14} more</span>`:""}</div>
+      </div>
+      <div class="dcard span">
+        <div class="dc-head"><span class="dot"></span>User agent (sent with every request)</div>
+        <div class="ua-block">${esc(d.ua)}</div>
+      </div>
+    </div>
+
+    <div class="closing">
+      <h3>None of this needed your permission</h3>
+      <p>Every item above was readable the instant the page loaded. Individually each looks harmless. Together they form an ID stable enough to follow you around the web without a single cookie. If you want to shrink your fingerprint:</p>
+      <div class="tips">
+        <div class="t"><span class="m">·</span><span>Use a browser that fights fingerprinting, like Firefox with resistFingerprinting, Brave, or the Tor Browser.</span></div>
+        <div class="t"><span class="m">·</span><span>Run a content blocker such as uBlock Origin to cut the trackers reading this in the first place.</span></div>
+        <div class="t"><span class="m">·</span><span>A VPN hides your IP, but not the fingerprint above. They are separate problems.</span></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="copyFp" type="button">⧉ Copy fingerprint</button>
+      <button id="rescan" type="button">⟳ Scan again</button>
+    </div>
+  </div>`;
+  reportEl.style.display="block";
+  $("#rescan").addEventListener("click", run);
+  $("#copyFp").addEventListener("click", async (e)=>{
+    try{ await navigator.clipboard.writeText(d.fingerprint); }
+    catch{ const t=document.createElement("textarea"); t.value=d.fingerprint; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(_){} t.remove(); }
+    const b=e.target; const o=b.textContent; b.textContent="Copied ✓"; b.classList.add("done"); setTimeout(()=>{b.textContent=o;b.classList.remove("done");},1600);
+  });
+}
+
+run();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reverse-Prompt · see the prompt behind any AI text · vishkul/tools</title>
+<meta name="description" content="Paste AI-written text and it reverse-engineers the prompt that likely produced it: the task, tone, format, length, persona, and constraints. Runs in your browser. It infers a likely prompt, not the real one.">
+<meta property="og:title" content="Reverse-Prompt · vishkul/tools">
+<meta property="og:description" content="Feed it the output, it shows you the input. The prompt behind any AI text, reverse-engineered.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  :root { --accent: #a06bff; --accent-line: rgba(160,107,255,0.42); --accent-dim: rgba(160,107,255,0.13); }
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  .kicker .lab { color: var(--dimmer); }
+  h1.title { font-family: var(--display); font-size: clamp(28px, 5.4vw, 42px); font-weight: 700; line-height: 1.05; margin-top: 16px; letter-spacing: -0.035em; }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 60ch; line-height: 1.6; }
+
+  .scanbox { margin-top: 26px; }
+  .bodybox { border: 1px solid var(--border-2); border-radius: 9px; background: var(--surface); overflow: hidden; transition: border-color .18s; }
+  .bodybox:focus-within { border-color: var(--accent); }
+  textarea#src { width: 100%; background: transparent; border: none; color: var(--text); font-family: var(--mono); font-size: 14px; line-height: 1.6; padding: 15px 16px; outline: none; resize: vertical; min-height: 180px; display: block; }
+  textarea#src::placeholder { color: var(--dimmer); }
+  .runrow { margin-top: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .runrow button { background: var(--accent); color: #0b0b0d; border: none; font-family: var(--mono); font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; cursor: pointer; transition: filter .18s; }
+  .runrow button:hover { filter: brightness(1.08); }
+  .runrow button:disabled { filter: grayscale(0.4) brightness(0.7); cursor: default; }
+  .runrow .chip { font-family: var(--mono); font-size: 12px; color: var(--dim); cursor: pointer; border-bottom: 1px dotted var(--border-2); }
+  .runrow .chip:hover { color: var(--accent); }
+  .runrow .note { font-family: var(--body); font-size: 12px; color: var(--dimmer); margin-left: auto; }
+
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+
+  #report { margin-top: 28px; display: none; }
+  .report-anim { animation: rise .4s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .promptbox { border: 1px solid var(--accent-line); border-radius: 12px; background: linear-gradient(180deg,var(--accent-dim),transparent); overflow: hidden; }
+  .promptbox .bar { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  .promptbox .bar span { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+  .copybtn { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--accent-line); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all .15s; }
+  .copybtn:hover { background: var(--accent-dim); }
+  .copybtn.done { color: var(--green); border-color: var(--green); }
+  .promptbox .ptext { font-family: var(--mono); font-size: 13.5px; color: var(--text); line-height: 1.65; padding: 18px; white-space: pre-wrap; word-break: break-word; margin: 0; }
+
+  .row-head { margin-top: 28px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--dimmer); text-transform: uppercase; }
+  .signals { margin-top: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); padding: 6px 18px; }
+  .sig { display: flex; gap: 16px; padding: 11px 0; border-top: 1px solid var(--border); align-items: baseline; }
+  .sig:first-child { border-top: none; }
+  .sig .k { font-family: var(--mono); font-size: 11px; color: var(--dimmer); width: 86px; flex: 0 0 auto; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sig .v { font-family: var(--body); font-size: 14px; color: var(--text); }
+  .chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 7px; }
+  .chips .c { font-family: var(--mono); font-size: 11.5px; color: var(--accent); border: 1px solid var(--accent-line); border-radius: 5px; padding: 3px 9px; }
+  .chips .c.dim { color: var(--dim); border-color: var(--border-2); }
+
+  .caveat { margin-top: 24px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 9px; background: var(--surface); padding: 15px 18px; }
+  .caveat p { font-family: var(--body); font-size: 13px; color: var(--dim); line-height: 1.6; }
+  .caveat b { color: var(--text); font-weight: 600; }
+
+  .errbox { margin-top: 20px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 8px; padding: 14px 18px; background: var(--surface); display: none; }
+  .errbox .er { color: var(--amber); font-weight: 600; font-size: 14px; font-family: var(--body); }
+  .errbox .ed { color: var(--dim); font-size: 13px; margin-top: 5px; font-family: var(--body); }
+  .rescan { margin-top: 20px; font-family: var(--mono); font-size: 13px; }
+  .rescan a { color: var(--accent); cursor: pointer; border-bottom: 1px dotted var(--accent-line); }
+  .footnote { margin: 40px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// reverse-prompt <span class="lab">· experiment</span></div>
+    <h1 class="title">Paste AI text.<br>See its <span class="mark">prompt</span>.</h1>
+    <p class="sub">Everyone reverse-engineers AI text the wrong way. Feed it the output, and this works backward to the input: the task, the tone, the format, the persona, and the shape someone probably asked for. You get a reusable prompt out the other side.</p>
+  </header>
+
+  <section class="scanbox">
+    <div class="bodybox">
+      <textarea id="src" placeholder="Paste a chunk of AI-written text here..." aria-label="AI-written text"></textarea>
+    </div>
+    <div class="runrow">
+      <button id="run" type="button">Reverse it</button>
+      <span class="chip" id="demoLink">try a sample</span>
+      <span class="note">runs locally · nothing stored</span>
+    </div>
+  </section>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">reverse-prompt</span></span>
+      </div>
+      <div class="term-body"><div class="diag" id="diag"></div></div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errbox">
+    <div class="er" id="errTitle"></div>
+    <div class="ed" id="errDetail"></div>
+  </div>
+
+  <section id="report"></section>
+
+  <p class="footnote">
+    Runs entirely in your browser. Nothing is uploaded or stored. This infers a <em>likely</em> prompt from the writing's fingerprints; it cannot recover the exact words someone typed, because that information is not in the text.
+    <br>Built by <a href="/">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+function analyze(text){
+  text = text.trim();
+  const low = text.toLowerCase();
+  const words = text.replace(/[^a-zA-Z']/g,' ').split(/\s+/).filter(Boolean);
+  const wc = words.length;
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length);
+  const hasNumbered = /^\s*\d+[.)]\s/m.test(text);
+  const hasBullets = /^\s*[-*•]\s/m.test(text);
+  const hasHeaders = /^#{1,4}\s/m.test(text) || /^\*\*[^*]+\*\*\s*:?\s*$/m.test(text);
+  const hasCode = /```/.test(text) || /\b(function|const|return|import|def|class)\b.*[;{(]/.test(text);
+  const greeting = /\b(hi|hello|hey|dear)\b[\s,]/i.test(text.slice(0,40));
+  const signoff = /\b(regards|best,|sincerely|cheers|thanks,|warm regards)\b/i.test(text.slice(-130));
+  let format;
+  if (hasCode) format = "a code snippet";
+  else if (greeting && signoff && wc < 400) format = "an email";
+  else if (hasNumbered) format = "a numbered list";
+  else if (hasBullets) format = "a bulleted list";
+  else if (hasHeaders) format = "a structured article with headings";
+  else if (/^["']|said|replied|"\s*$/m.test(text) && wc > 60) format = "a piece of creative writing";
+  else if (sentences.length <= 3) format = "a short blurb";
+  else format = "an essay or explainer";
+
+  const length = wc < 80 ? "short" : wc < 250 ? "medium-length" : wc < 600 ? "long" : "very long";
+
+  const contractions = (low.match(/\b\w+'(s|t|re|ve|ll|d|m)\b/g)||[]).length;
+  const exclaim = (text.match(/!/g)||[]).length;
+  const youCount = (low.match(/\byou(r|rs|'re|'ve)?\b/g)||[]).length;
+  const longWords = words.filter(w=>w.length>=9).length;
+  const formalScore = (longWords/Math.max(1,wc)) - (contractions/Math.max(1,wc)) - (youCount/Math.max(1,wc));
+  let tone;
+  if (exclaim >= 2 && youCount > 2) tone = "upbeat and friendly";
+  else if (formalScore > 0.05) tone = "formal and professional";
+  else if (contractions/Math.max(1,wc) > 0.02 && youCount > 1) tone = "casual and conversational";
+  else tone = "neutral and informative";
+
+  const tellsList = ["delve","leverage","tapestry","testament","navigate","underscore","pivotal","robust","seamless","foster","realm","crucial","harness","elevate","unlock","landscape","ever-evolving","game-changer","in today's","more than just","at the end of the day","when it comes to","embark","bustling","whether you're"];
+  const tells = tellsList.filter(t=>low.includes(t));
+
+  const struct = [];
+  if (/in conclusion|to conclude|in summary|ultimately,|by embracing|by following/i.test(text)) struct.push("a wrap-up conclusion");
+  if (hasHeaders) struct.push("section headings");
+  if (hasNumbered||hasBullets) struct.push("a list of points");
+  if (/here are \d+|here are some|\d+ (key |)(ways|tips|steps|strategies|reasons)/i.test(text)) struct.push("a listicle framing");
+  if (/first,|second,|finally,|next,/i.test(low)) struct.push("step-by-step ordering");
+
+  let audience = null;
+  if (/in simple terms|imagine|think of it like|basically|simply put|for beginners/i.test(low)) audience = "a general or beginner audience";
+  else if (longWords/Math.max(1,wc) > 0.14) audience = "an informed or technical audience";
+
+  let persona = null;
+  if (/marketing|brand|audience|conversion|campaign|customers|engagement/i.test(low)) persona = "a marketer or brand strategist";
+  else if (/\b(code|function|api|database|deploy|server|algorithm)\b/i.test(low)) persona = "a software engineer";
+  else if (hasHeaders && /benefit|guide|how to|tips|steps/i.test(low)) persona = "a content writer";
+  else if (/study|research|evidence|theory|analysis|data suggests/i.test(low)) persona = "a subject-matter expert";
+
+  const stop = new Set("the a an and or but of to in on at for with by from as is are was were be been being this that these those it its they them their you your yours we our ours he she his her him i me my mine will would can could should shall may might must have has had do does did not no nor so if then else than about into over under more most less least other some any such only own same too very just also even still much many few both each all every into onto out up down off near here there what which who whom whose when where why how".split(/\s+/));
+  const freq = {};
+  const fillers = new Set("well today todays really thing things make makes making getting good great best more most very much take takes using used like also even still able sure want need help kind sort lot lots part comes become becomes everything something someone".split(/\s+/));
+  words.forEach(w=>{let l=w.toLowerCase().replace(/'s$/,'').replace(/[^a-z]/g,''); if(l.length>=4 && !stop.has(l) && !fillers.has(l)) freq[l]=(freq[l]||0)+1;});
+  const topic = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+
+  const lenWord = length === "short" ? "a short" : length === "medium-length" ? "a medium-length" : length === "long" ? "a long" : "a very long";
+  const toneWord = tone === "neutral and informative" ? "a neutral, informative" : "a " + tone;
+  let p = `Write ${lenWord} ${format.replace(/^an? /,'')} about ${topic.length ? topic.join(", ") : "[your topic]"}`;
+  if (audience) p += `, aimed at ${audience}`;
+  p += `, in ${toneWord} tone.`;
+  if (persona) p = `Act as ${persona}.\n\n` + p;
+  if (struct.length) p += ` Use ${struct.join(", ")}.`;
+  p += `\n\nMatch this style closely.`;
+
+  return { format, length, tone, audience, persona, topic, struct, tells, prompt: p, wc };
+}
+
+const $ = (s)=>document.querySelector(s);
+const srcEl=$("#src"), runBtn=$("#run");
+const consoleEl=$("#console"), diagEl=$("#diag"), reportEl=$("#report"), errBox=$("#errbox");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+const STEPS=[
+  ()=>`<span class="ar">→</span> reading the text`,
+  ()=>`<span class="ar">→</span> detecting the format`,
+  ()=>`<span class="ar">→</span> reading the tone and audience`,
+  ()=>`<span class="ar">→</span> inferring the persona`,
+  ()=>`<span class="ar">→</span> reconstructing the prompt`,
+];
+
+let busy=false;
+function run(){
+  const text = srcEl.value.trim();
+  if (busy) return;
+  errBox.style.display="none";
+  if (text.replace(/\s+/g,' ').split(' ').filter(Boolean).length < 20){
+    reportEl.style.display="none";
+    $("#errTitle").textContent="Paste a bit more";
+    $("#errDetail").textContent="Drop in at least a short paragraph of AI-written text and I'll work out the prompt behind it.";
+    errBox.style.display="block";
+    return;
+  }
+  busy=true; runBtn.disabled=true;
+  reportEl.style.display="none"; reportEl.innerHTML="";
+  consoleEl.style.display="block"; diagEl.innerHTML="";
+  reveal(analyze(text));
+}
+async function reveal(r){
+  const delay = reduceMotion ? 0 : 150;
+  for(let i=0;i<STEPS.length;i++){
+    const line=document.createElement("div"); line.className="line"; line.innerHTML=STEPS[i]();
+    diagEl.appendChild(line);
+    if(delay) await new Promise(x=>setTimeout(x,delay));
+  }
+  const cur=document.createElement("span"); cur.className="cursor"; diagEl.appendChild(cur);
+  if(delay) await new Promise(x=>setTimeout(x,180));
+  cur.remove();
+  const d=document.createElement("div"); d.className="line"; d.innerHTML=`<span class="ok">✓ prompt reconstructed</span>`;
+  diagEl.appendChild(d);
+  render(r); busy=false; runBtn.disabled=false;
+}
+
+function render(r){
+  const sig = (k,v)=>`<div class="sig"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`;
+  const tellChips = r.tells.length
+    ? `<div class="row-head">AI tells spotted</div><div class="chips">${r.tells.slice(0,12).map(t=>`<span class="c">${esc(t)}</span>`).join("")}</div>`
+    : "";
+  const topicChips = r.topic.length ? `<div class="chips" style="margin-top:6px">${r.topic.map(t=>`<span class="c dim">${esc(t)}</span>`).join("")}</div>` : "";
+  reportEl.innerHTML = `
+  <div class="report-anim">
+    <div class="row-head">the likely prompt</div>
+    <div class="promptbox" style="margin-top:12px">
+      <div class="bar"><span>reconstructed-prompt.txt</span><button class="copybtn" id="copyBtn" type="button">Copy prompt</button></div>
+      <pre class="ptext" id="ptext">${esc(r.prompt)}</pre>
+    </div>
+
+    <div class="row-head">what it read</div>
+    <div class="signals">
+      ${sig("Format", r.format)}
+      ${sig("Length", r.length + " (~" + r.wc + " words)")}
+      ${sig("Tone", r.tone)}
+      ${r.audience ? sig("Audience", r.audience) : ""}
+      ${r.persona ? sig("Persona", r.persona) : ""}
+      ${r.struct.length ? sig("Structure", r.struct.join(", ")) : ""}
+    </div>
+    <div class="row-head">topic it locked onto</div>
+    ${topicChips || '<div class="chips" style="margin-top:6px"><span class="c dim">no strong topic detected</span></div>'}
+
+    ${tellChips}
+
+    <div class="caveat">
+      <p><b>This is a reconstruction, not a recording.</b> The exact prompt someone typed is not stored in the output, so no tool can recover it. What you get is a prompt that would plausibly produce text like this, which is often close enough to reuse or learn from.</p>
+    </div>
+
+    <div class="rescan"><a id="again">↑ reverse another</a></div>
+  </div>`;
+  reportEl.style.display="block";
+  $("#copyBtn").addEventListener("click", async (e)=>{
+    try{ await navigator.clipboard.writeText(r.prompt); }
+    catch{ const t=document.createElement("textarea"); t.value=r.prompt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(_){} t.remove(); }
+    const b=e.target; b.textContent="Copied ✓"; b.classList.add("done"); setTimeout(()=>{b.textContent="Copy prompt"; b.classList.remove("done");},1800);
+  });
+  $("#again").addEventListener("click", ()=>{ window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"}); setTimeout(()=>srcEl.focus(),300); });
+  reportEl.scrollIntoView({behavior:reduceMotion?"auto":"smooth", block:"nearest"});
+}
+
+const SAMPLE = `In today's fast-paced digital landscape, building a strong personal brand has become more crucial than ever. Whether you're an aspiring entrepreneur or a seasoned professional, a well-crafted online presence can unlock countless opportunities.
+
+Here are three key strategies to elevate your brand:
+
+First, define your unique value proposition. Second, leverage social media to foster genuine connections with your audience. Finally, remain consistent and authentic in everything you do.
+
+By embracing these principles, you'll be well on your way to standing out in a crowded marketplace.`;
+
+runBtn.addEventListener("click", run);
+$("#demoLink").addEventListener("click", ()=>{ srcEl.value = SAMPLE; run(); });
+const params = new URLSearchParams(location.search);
+if (params.get("demo")) { srcEl.value = SAMPLE; run(); }
+</script>
+</body>
+</html>

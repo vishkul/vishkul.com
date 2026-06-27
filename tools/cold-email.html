@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cold Email Teardown · Will this get a reply? · vishkul/tools</title>
+<meta name="description" content="Paste a cold email and get an honest teardown: a reply-readiness score, the specific things killing your reply rate, and a prompt to rewrite it.">
+<meta property="og:title" content="Cold Email Teardown · vishkul/tools">
+<meta property="og:description" content="Paste a cold email, get an honest teardown and the fixes that win replies.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  h1.title { font-family: var(--display); font-size: clamp(28px, 5.4vw, 42px); font-weight: 700;
+    line-height: 1.05; margin-top: 16px; letter-spacing: -0.035em; }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 60ch; line-height: 1.6; }
+
+  .scanbox { margin-top: 26px; }
+  .subjectline { display: flex; align-items: stretch; border: 1px solid var(--border-2); border-radius: 9px 9px 0 0;
+    border-bottom: none; overflow: hidden; background: var(--surface); transition: border-color .18s; }
+  .subjectline:focus-within { border-color: var(--accent); }
+  .subjectline .tag { display: flex; align-items: center; padding: 0 10px 0 16px; color: var(--dimmer);
+    font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  .subjectline input { flex: 1; background: transparent; border: none; color: var(--text); font-family: var(--mono);
+    font-size: 14px; padding: 13px 12px; outline: none; min-width: 0; }
+  .subjectline input::placeholder { color: var(--dimmer); }
+  .bodybox { border: 1px solid var(--border-2); border-radius: 0 0 9px 9px; background: var(--surface);
+    overflow: hidden; transition: border-color .18s; }
+  .bodybox:focus-within { border-color: var(--accent); }
+  textarea#body { width: 100%; background: transparent; border: none; color: var(--text); font-family: var(--mono);
+    font-size: 14px; line-height: 1.6; padding: 15px 16px; outline: none; resize: vertical; min-height: 168px; display: block; }
+  textarea#body::placeholder { color: var(--dimmer); }
+  .runrow { margin-top: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .runrow button { background: var(--accent); color: #0b0b0d; border: none; font-family: var(--mono);
+    font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; cursor: pointer; transition: filter .18s; }
+  .runrow button:hover { filter: brightness(1.08); }
+  .runrow button:disabled { filter: grayscale(0.4) brightness(0.7); cursor: default; }
+  .runrow .chip { font-family: var(--mono); font-size: 12px; color: var(--dim); cursor: pointer; border-bottom: 1px dotted var(--border-2); }
+  .runrow .chip:hover { color: var(--accent); }
+  .runrow .note { font-family: var(--body); font-size: 12px; color: var(--dimmer); margin-left: auto; }
+
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+
+  #report { margin-top: 28px; display: none; }
+  .scorecard { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .score-top { padding: 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .score-num { font-family: var(--mono); font-size: 54px; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+  .score-num span { font-size: 21px; color: var(--dimmer); font-weight: 500; }
+  .score-meta { flex: 1; min-width: 180px; }
+  .verdict { font-family: var(--body); font-size: 17px; font-weight: 600; }
+  .score-sub { font-family: var(--mono); margin-top: 6px; font-size: 12px; color: var(--dimmer); }
+  .track { height: 7px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin: 0 24px 22px; }
+  .track > i { display: block; height: 100%; border-radius: 4px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+
+  .block-head { margin-top: 30px; font-family: var(--display); font-weight: 600; font-size: 16px; display: flex; align-items: baseline; gap: 10px; }
+  .block-head .count { font-family: var(--mono); font-size: 12px; color: var(--dimmer); }
+
+  .good-list { margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--green); border-radius: 8px;
+    background: var(--surface); padding: 6px 18px; }
+  .good-list .g { font-family: var(--body); font-size: 13px; color: var(--dim); line-height: 1.55; padding: 9px 0;
+    border-top: 1px solid var(--border); display: flex; gap: 9px; }
+  .good-list .g:first-child { border-top: none; }
+  .good-list .g .m { color: var(--green); flex: 0 0 auto; }
+
+  .fix { margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 8px; padding: 14px 16px; background: var(--surface); }
+  .fix.fail { border-left-color: var(--red); }
+  .fix-top { display: flex; align-items: center; gap: 10px; }
+  .fix-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; }
+  .fix-pill.warn { color: var(--amber); background: rgba(254,188,46,0.12); }
+  .fix-pill.fail { color: var(--red); background: rgba(255,77,77,0.12); }
+  .fix-label { font-family: var(--body); font-size: 14.5px; font-weight: 600; }
+  .fix-body { font-family: var(--body); margin-top: 8px; font-size: 13px; color: var(--dim); line-height: 1.6; }
+
+  .promptwrap { margin-top: 32px; }
+  .promptwrap .ph { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .promptwrap .ph h3 { font-family: var(--display); font-weight: 600; font-size: 16px; }
+  .promptwrap .ph .hint { font-family: var(--body); font-size: 12.5px; color: var(--dimmer); }
+  .promptbox { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft); overflow: hidden; }
+  .promptbox .bar { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  .promptbox .bar span { font-family: var(--mono); font-size: 11px; color: var(--dimmer); }
+  .copybtn { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--accent-line); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all .15s; }
+  .copybtn:hover { background: var(--accent-dim); }
+  .copybtn.done { color: var(--green); border-color: var(--green); }
+  .promptbox pre { font-family: var(--mono); font-size: 12px; color: var(--dim); line-height: 1.6; padding: 16px; white-space: pre-wrap; word-break: break-word; max-height: 280px; overflow-y: auto; margin: 0; }
+
+  .errbox { margin-top: 20px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 8px; padding: 14px 18px; background: var(--surface); display: none; }
+  .errbox .er { color: var(--amber); font-weight: 600; font-size: 14px; font-family: var(--body); }
+  .errbox .ed { color: var(--dim); font-size: 13px; margin-top: 5px; font-family: var(--body); }
+
+  .rescan { margin-top: 22px; font-size: 13px; font-family: var(--mono); }
+  .rescan a { color: var(--accent); cursor: pointer; border-bottom: 1px dotted var(--accent-line); }
+  .footnote { margin: 44px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// cold email teardown</div>
+    <h1 class="title">Will this cold<br>email get <span class="mark">ignored</span>?</h1>
+    <p class="sub">Paste a cold email and find out before you send it. This scores it on the things that actually kill reply rates, shows you what's working, and writes you a prompt to fix the rest. Runs entirely in your browser. Nothing leaves this page.</p>
+  </header>
+
+  <section class="scanbox">
+    <div class="subjectline">
+      <span class="tag">subject:</span>
+      <input id="subject" type="text" autocomplete="off" placeholder="(optional, but it decides if you get opened)" aria-label="Email subject line">
+    </div>
+    <div class="bodybox">
+      <textarea id="body" placeholder="Paste the body of your cold email here..." aria-label="Email body"></textarea>
+    </div>
+    <div class="runrow">
+      <button id="run" type="button">Tear it down</button>
+      <span class="chip" id="demoLink">see a sample teardown</span>
+      <span class="note">runs locally · nothing stored</span>
+    </div>
+  </section>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">cold-email</span></span>
+      </div>
+      <div class="term-body"><div class="diag" id="diag"></div></div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errbox">
+    <div class="er" id="errTitle"></div>
+    <div class="ed" id="errDetail"></div>
+  </div>
+
+  <section id="report"></section>
+
+  <p class="footnote">
+    Scored on real reply-rate signals, all in your browser. Nothing is uploaded or stored.
+    <br>Built by <a href="/">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+// ===== analyzer (runs client-side) =====
+function analyzeEmail(body, subject = "") {
+  body = (body || "").trim();
+  subject = (subject || "").trim();
+  const low = body.toLowerCase();
+  const words = body.replace(/[^a-zA-Z']/g, " ").split(/\s+/).filter(Boolean);
+  const wordCount = words.length;
+  const sentences = body.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.replace(/[^a-z]/gi," ").trim().split(/\s+/).filter(Boolean).length >= 2);
+  const checks = [];
+  const add = (o) => checks.push(o);
+  const cnt = (re) => (low.match(re) || []).length;
+
+  (() => {
+    const max = 16; let e, sev, fix, green;
+    if (wordCount >= 50 && wordCount <= 125) { e = 16; green = `Good length (${wordCount} words). Long enough to land a point, short enough to read.`; }
+    else if ((wordCount >= 40 && wordCount < 50) || (wordCount > 125 && wordCount <= 160)) { e = 10; sev="warn"; fix = `A touch ${wordCount < 50 ? "thin" : "long"} at ${wordCount} words. The sweet spot is 50 to 125; people skim cold email.`; }
+    else if (wordCount < 40) { e = 4; sev="fail"; fix = `Very short at ${wordCount} words. Not enough to establish why you're worth a reply. Aim for 60 to 100.`; }
+    else { e = 3; sev="fail"; fix = `Too long at ${wordCount} words. Over ~150 and it gets skimmed or skipped. Cut to 75 to 100.`; }
+    add({ key:"length", label:"Length", earned:e, max, severity:sev, fix, green });
+  })();
+  (() => {
+    const max = 18; const q = cnt(/\?/g); let e, sev, fix, green;
+    if (q === 1) { e = 18; green = "One clear ask. Easy to say yes or no to."; }
+    else if (q === 0) { e = 4; sev="fail"; fix = "No clear ask. End with one specific, low-friction question, like 'Worth a 15-minute call next week?'"; }
+    else if (q === 2) { e = 11; sev="warn"; fix = "Two questions split attention. Cut to a single ask so there's one obvious thing to reply to."; }
+    else { e = 5; sev="fail"; fix = `Too many questions (${q}). Multiple asks usually get none answered. Pick one.`; }
+    add({ key:"ask", label:"The ask", earned:e, max, severity:sev, fix, green });
+  })();
+  (() => {
+    const max = 18; const sp = cnt(/\b(i|i'm|i've|i'll|me|my|mine|we|we're|we've|our|us)\b/g); const yp = cnt(/\b(you|you're|you've|your|yours)\b/g);
+    const promoList = ["we are a","we're a","we are an","we provide","we offer","our platform","our product","our solution","our software","our company","we help companies","we have helped","we specialize"];
+    const promo = promoList.filter(p => low.includes(p)).length;
+    const ratio = yp / Math.max(1, sp); let e, sev, fix, green;
+    if (promo >= 2 || (sp >= 6 && yp <= 1 && promo >= 1)) { e = 4; sev="fail"; fix = "It pitches what you do, not their problem. Lead with something specific about them; keep what you offer to a single line."; }
+    else if (yp === 0) { e = 12; sev="warn"; fix = "It doesn't use 'you'. Referencing them by name or their exact situation works, but make sure at least one line is clearly about their world, not yours."; }
+    else if (ratio >= 0.7) { e = 18; green = `Reader-focused. References them (${yp}) about as much as yourself (${sp}).`; }
+    else if (ratio >= 0.35) { e = 12; sev="warn"; fix = `Leans sender-heavy: 'I/we' ${sp} vs 'you' ${yp}. Reframe at least one line around them.`; }
+    else { e = 6; sev="fail"; fix = `Mostly about you: 'I/we' ${sp} vs 'you' ${yp}. Sender-first cold emails get ignored. Open with the recipient.`; }
+    add({ key:"them", label:"About them, not you", earned:e, max, severity:sev, fix, green });
+  })();
+  (() => {
+    const max = 10; let e, sev, fix, green;
+    let b = body.replace(/^\s*(hi|hello|hey|dear|greetings)[^.!?\n]*[,\n]/i, "").trim();
+    const first = (b.split(/(?<=[.!?])\s+|\n/)[0] || "").toLowerCase().trim();
+    const weak = /^(i|i'm|i am|my name|we|we're|we are|allow me|to whom)\b/.test(first) || /\b(my name is|reaching out|i wanted to reach|i hope this email finds|i hope this finds|to whom it may concern|dear sir)\b/.test(first);
+    if (weak) { e = 3; sev="warn"; fix = "Opens by introducing yourself. The reader doesn't care yet. Lead with a sharp observation about them or their company."; }
+    else { e = 10; green = "Strong opener. Doesn't burn the first line on a self-introduction."; }
+    add({ key:"opener", label:"Opening line", earned:e, max, severity:sev, fix, green });
+  })();
+  (() => {
+    const max = 10; const list = ["i hope this email finds you well","i hope this finds you well","i hope you're doing well","i hope you are doing well","to whom it may concern","dear sir or madam","dear sir/madam","dear hiring manager","i came across your","i wanted to reach out","i am reaching out","my name is","allow me to introduce","i know you're busy","sorry to bother","let me introduce myself"];
+    const found = list.filter(p => low.includes(p));
+    let e = Math.max(0, max - 4 * found.length);
+    const hard = found.some(f => ["i hope this email finds you well","to whom it may concern","my name is","dear sir or madam"].includes(f));
+    if (found.length === 0) add({ key:"cliche", label:"Clichés", earned:max, max, green:"No tired clichés. Reads like a person, not a template." });
+    else add({ key:"cliche", label:"Clichés", earned:e, max, severity: hard ? "fail" : "warn", fix: `Cut the clichés: ${found.slice(0,2).map(f=>'"'+f+'"').join(", ")}. They scream template and tank trust.` });
+  })();
+  (() => {
+    const max = 10; const list = ["free","guarantee","guaranteed","act now","limited time","risk-free","risk free","click here","buy now","100%","congratulations","winner","urgent","offer expires","exclusive deal","no obligation","best price","cheap","discount","cash bonus","once in a lifetime"];
+    const found = list.filter(p => new RegExp("\\b"+p.replace(/[-/]/g,"[-/ ]")+"\\b").test(low));
+    if (found.length === 0) add({ key:"spam", label:"Spam triggers", earned:max, max });
+    else add({ key:"spam", label:"Spam triggers", earned:Math.max(0, max - 3*found.length), max, severity: found.length>=2?"fail":"warn", fix:`Spam-trigger words (${found.slice(0,3).map(f=>'"'+f+'"').join(", ")}) hurt deliverability and read salesy. Strip them.` });
+  })();
+  (() => {
+    const max = 8; const list = ["i was wondering","wondering if","just wondering","if that's okay","if that's ok","sorry to bother","hope that's okay","whenever you get a chance","whenever works","if you have time","no worries if not","i think maybe","might possibly","possibly","perhaps","maybe you","kind of","sort of"];
+    let found = list.filter(p => low.includes(p));
+    const justCount = cnt(/\bjust\b/g);
+    let extra = justCount > 2 ? 1 : 0;
+    const total = found.length + extra;
+    if (total === 0) add({ key:"hedge", label:"Confidence", earned:max, max, green:"Confident tone. No apologizing or hedging." });
+    else add({ key:"hedge", label:"Confidence", earned:Math.max(0, max - 2*total), max, severity:"warn", fix:`Hedging or apologetic phrasing${found.length?` (${found.slice(0,2).map(f=>'"'+f+'"').join(", ")})`:""}${extra?` and overusing "just"`:""} undercuts you. Say it straight.` });
+  })();
+  (() => {
+    const max = 5; const ex = cnt(/!/g);
+    if (ex <= 1) add({ key:"exclaim", label:"Restraint", earned:max, max });
+    else add({ key:"exclaim", label:"Restraint", earned:Math.max(0, max - 2*(ex-1)), max, severity:"warn", fix:`Too many exclamation marks (${ex}). One at most; more reads as trying too hard.` });
+  })();
+  (() => {
+    const max = 5; const allow = new Set(["CEO","CTO","CFO","COO","AI","SaaS","B2B","B2C","USA","UK","API","SEO","ROI","UX","UI","NYC","OK","PS","FYI"]);
+    const caps = (body.match(/\b[A-Z]{3,}\b/g) || []).filter(w => !allow.has(w));
+    if (caps.length === 0) add({ key:"caps", label:"No shouting", earned:max, max });
+    else add({ key:"caps", label:"No shouting", earned:Math.max(0, max - 2*caps.length), max, severity:"warn", fix:`ALL-CAPS words (${[...new Set(caps)].slice(0,3).map(w=>'"'+w+'"').join(", ")}) read as shouting. Use normal case.` });
+  })();
+  let subjectProvided = !!subject;
+  if (subject) {
+    const max = 16; const sl = subject.toLowerCase(); const sw = subject.split(/\s+/).filter(Boolean).length;
+    let e = max; const probs = [];
+    if (/[A-Z]{4,}/.test(subject)) { e -= 6; probs.push("it's shouting in caps"); }
+    if ((subject.match(/!/g)||[]).length) { e -= 4; probs.push("it has exclamation marks"); }
+    if (/\b(free|guarantee|urgent|act now|limited|winner|congratulations|exclusive)\b/.test(sl)) { e -= 6; probs.push("it uses spam-trigger words"); }
+    if (subject.length > 60 || sw > 9) { e -= 4; probs.push("it's too long (keep it 3 to 7 words)"); }
+    if (sw < 2) { e -= 3; probs.push("it's too vague"); }
+    if (/^re:/i.test(subject)) { e -= 5; probs.push("faking a 'Re:' reply erodes trust"); }
+    e = Math.max(0, e);
+    if (probs.length === 0) add({ key:"subject", label:"Subject line", earned:max, max, green:`Subject works: short, specific, no hype.` });
+    else add({ key:"subject", label:"Subject line", earned:e, max, severity: e < max/2 ? "fail":"warn", fix:`Subject problems: ${probs.join("; ")}. The subject decides if it's even opened. Try something plain and specific.` });
+  }
+
+  const possible = checks.reduce((a,c)=>a+c.max,0);
+  const earned = checks.reduce((a,c)=>a+c.earned,0);
+  const score = Math.round(earned / possible * 100);
+  let label;
+  if (score >= 85) label = "Strong. This earns replies.";
+  else if (score >= 68) label = "Solid, with a few easy wins.";
+  else if (score >= 48) label = "Needs work. It'll get skimmed.";
+  else label = "This gets ignored or deleted.";
+  const greenFlags = checks.filter(c => c.green).map(c => c.green);
+  const issues = checks.filter(c => c.severity).map(c => ({ label:c.label, severity:c.severity, lost:c.max - c.earned, fix:c.fix })).sort((a,b)=> b.lost - a.lost);
+  if (!subjectProvided) issues.push({ label:"Subject line", severity:"warn", lost:0, fix:"You didn't include a subject. It decides whether the email is opened at all. Keep it 3 to 7 words, specific, no hype, e.g. 'idea for {company}'s onboarding'." });
+  const prompt = `You are a cold-email expert who has run high-reply outbound campaigns. Rewrite the email below so it earns a reply, keeping it honest and specific. Do not invent facts; mark anything I should personalize as [like this].
+
+DIAGNOSIS (from an automated teardown)
+- Reply-readiness score: ${score}/100 (${label})
+- Issues found: ${issues.map(i=>i.label).join(", ") || "minor"}
+
+${subject ? `SUBJECT: ${subject}\n` : ""}EMAIL
+"""
+${body}
+"""
+
+Give me: (1) a tightened rewrite under 100 words with a strong subject line, (2) two alternate opening lines, and (3) one sentence on why the rewrite will get more replies. Keep my voice; don't make it sound like corporate marketing.`;
+  return { score, label, wordCount, subjectProvided, greenFlags, issues, prompt };
+}
+
+// ===== UI =====
+const $ = (s) => document.querySelector(s);
+const bodyEl = $("#body"), subjEl = $("#subject"), runBtn = $("#run");
+const consoleEl = $("#console"), diagEl = $("#diag"), reportEl = $("#report"), errBox = $("#errbox");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const STEPS = [
+  () => `<span class="ar">→</span> reading the email`,
+  () => `<span class="ar">→</span> checking length and scannability`,
+  () => `<span class="ar">→</span> testing the ask`,
+  () => `<span class="ar">→</span> measuring me-vs-you balance`,
+  () => `<span class="ar">→</span> scanning for reply-killers`,
+  () => `<span class="ar">→</span> checking the subject line`,
+  () => `<span class="ar">→</span> scoring`,
+];
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function colorFor(score){ return score >= 68 ? "var(--green)" : score >= 48 ? "var(--amber)" : "var(--red)"; }
+
+let busy = false;
+function run(){
+  const body = bodyEl.value.trim();
+  if (busy) return;
+  errBox.style.display = "none";
+  if (body.replace(/\s+/g," ").split(" ").filter(Boolean).length < 12) {
+    reportEl.style.display = "none";
+    $("#errTitle").textContent = "Paste a bit more to tear down";
+    $("#errDetail").textContent = "Drop in the body of a real cold email (a couple of sentences at least) and I'll score it.";
+    errBox.style.display = "block";
+    return;
+  }
+  busy = true; runBtn.disabled = true;
+  reportEl.style.display = "none"; reportEl.innerHTML = "";
+  consoleEl.style.display = "block"; diagEl.innerHTML = "";
+  const result = analyzeEmail(body, subjEl.value.trim());
+  reveal(result);
+}
+
+async function reveal(result){
+  const delay = reduceMotion ? 0 : 145;
+  for (let i = 0; i < STEPS.length; i++){
+    const line = document.createElement("div"); line.className = "line"; line.innerHTML = STEPS[i]();
+    diagEl.appendChild(line);
+    if (delay) await new Promise(r => setTimeout(r, delay));
+  }
+  const cur = document.createElement("span"); cur.className = "cursor"; diagEl.appendChild(cur);
+  if (delay) await new Promise(r => setTimeout(r, 200));
+  cur.remove();
+  const d = document.createElement("div"); d.className = "line";
+  d.innerHTML = `<span class="ok">✓ done</span> <span class="dimmer">· ${result.score}/100</span>`;
+  diagEl.appendChild(d);
+  renderReport(result);
+  busy = false; runBtn.disabled = false;
+}
+
+function renderReport(r){
+  const col = colorFor(r.score);
+  const good = r.greenFlags.length
+    ? `<div class="block-head">What's working <span class="count">${r.greenFlags.length}</span></div>
+       <div class="good-list">${r.greenFlags.map(g=>`<div class="g"><span class="m">+</span><span>${esc(g)}</span></div>`).join("")}</div>`
+    : "";
+  const realIssues = r.issues.filter(i => i.lost > 0 || i.label === "Subject line");
+  const fixes = realIssues.length
+    ? realIssues.map(i=>`
+      <div class="fix ${i.severity}">
+        <div class="fix-top">
+          <span class="fix-pill ${i.severity}">${i.severity === "fail" ? "FIX" : "TIGHTEN"}</span>
+          <span class="fix-label">${esc(i.label)}</span>
+        </div>
+        <div class="fix-body">${esc(i.fix)}</div>
+      </div>`).join("")
+    : `<div class="good-list"><div class="g"><span class="m">+</span><span>No major reply-rate killers. Send it.</span></div></div>`;
+
+  reportEl.innerHTML = `
+    <div class="scorecard">
+      <div class="score-top">
+        <div class="score-num" style="color:${col}">${r.score}<span>/100</span></div>
+        <div class="score-meta">
+          <div class="verdict" style="color:${col}">${esc(r.label)}</div>
+          <div class="score-sub">reply-readiness · ${r.wordCount} words${r.subjectProvided ? " · subject included" : " · no subject"}</div>
+        </div>
+      </div>
+      <div class="track"><i style="width:${r.score}%;background:${col}"></i></div>
+    </div>
+
+    ${good}
+
+    <div class="block-head">${realIssues.length ? "Reply-rate killers" : "Verdict"} <span class="count">${realIssues.length ? realIssues.length + " to fix" : "clean"}</span></div>
+    ${fixes}
+
+    <div class="promptwrap">
+      <div class="ph">
+        <h3>Want it rewritten?</h3>
+        <span class="hint">Copy this into ChatGPT, Claude, or any AI</span>
+      </div>
+      <div class="promptbox">
+        <div class="bar"><span>rewrite-prompt.txt</span><button class="copybtn" id="copyBtn" type="button">Copy prompt</button></div>
+        <pre id="promptText">${esc(r.prompt)}</pre>
+      </div>
+    </div>
+
+    <div class="rescan"><a id="again">↑ tear down another</a></div>
+  `;
+  reportEl.style.display = "block";
+  $("#copyBtn").addEventListener("click", async () => {
+    const btn = $("#copyBtn");
+    try { await navigator.clipboard.writeText(r.prompt); }
+    catch { const t = document.createElement("textarea"); t.value = r.prompt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(e){} t.remove(); }
+    btn.textContent = "Copied ✓"; btn.classList.add("done");
+    setTimeout(() => { btn.textContent = "Copy prompt"; btn.classList.remove("done"); }, 2000);
+  });
+  $("#again").addEventListener("click", () => { window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"}); setTimeout(()=>bodyEl.focus(),300); });
+  reportEl.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
+// sample (the demo runs the REAL analyzer on this)
+const SAMPLE_SUBJECT = "Quick question about your marketing";
+const SAMPLE_BODY = `Hi there,
+
+I hope you're doing well! My name is Alex and I'm the founder of GrowthLabs. We are a marketing agency that helps companies scale their content and grow their audience.
+
+I came across your company and was really impressed with what you're doing. I wanted to reach out because I think we could really help you take things to the next level. We've worked with tons of brands and gotten amazing results.
+
+Would you be open to a quick call sometime this week or next to discuss how we can help? Let me know what works for you!
+
+Thanks so much,
+Alex`;
+
+function runDemo(){
+  subjEl.value = SAMPLE_SUBJECT;
+  bodyEl.value = SAMPLE_BODY;
+  run();
+}
+
+runBtn.addEventListener("click", run);
+$("#demoLink").addEventListener("click", runDemo);
+const params = new URLSearchParams(location.search);
+if (params.get("demo")) runDemo();
+</script>
+</body>
+</html>

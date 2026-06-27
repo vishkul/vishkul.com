@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>image-to-blocks/ · vishkul tools</title>
+<meta name="description" content="Turn any image into a Minecraft block plan. Colour-matched to real blocks, with exact counts for flat builds and a material palette for 3D references. No AI, no API.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  /* ---- tool-specific styling, built on the tools.css design system ---- */
+  .mc-wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .mode-toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:fit-content;margin:0 0 6px}
+  .mode-toggle button{font-family:'JetBrains Mono';font-size:13px;padding:10px 18px;background:transparent;color:var(--dim);border:none;cursor:pointer;transition:all .15s}
+  .mode-toggle button.on{background:var(--accent);color:#0b0b0d;font-weight:600}
+  .mode-sub{font-size:12.5px;color:var(--dimmer);margin:0 0 22px;line-height:1.5;max-width:680px}
+
+  .panel{border:1px solid var(--line);border-radius:14px;padding:22px;background:var(--card,rgba(255,255,255,.02));margin-bottom:20px}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;cursor:pointer;transition:all .18s;background:rgba(255,255,255,.015)}
+  .drop:hover,.drop.drag{border-color:var(--accent);background:rgba(255,45,120,.04)}
+  .drop p{margin:6px 0;color:var(--dim);font-size:14px}
+  .drop .big{font-family:'Space Grotesk';font-size:17px;color:var(--text);font-weight:600}
+  .drop input{display:none}
+
+  .controls{display:grid;gap:18px;margin-top:4px}
+  @media(min-width:640px){.controls{grid-template-columns:1fr 1fr}}
+  .ctrl label{display:block;font-family:'JetBrains Mono';font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:.02em}
+  .ctrl .val{color:var(--accent);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+  select{width:100%;font-family:'JetBrains Mono';font-size:13px;padding:9px 11px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+  .seg{display:flex;flex-wrap:wrap;gap:7px}
+  .seg button{font-family:'JetBrains Mono';font-size:12px;padding:7px 12px;background:var(--bg);color:var(--dim);border:1px solid var(--line);border-radius:7px;cursor:pointer;transition:all .14s}
+  .seg button.on{background:var(--accent);color:#0b0b0d;font-weight:600;border-color:var(--accent)}
+
+  .palette-pick{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .palette-pick button{font-family:'JetBrains Mono';font-size:11.5px;padding:6px 10px;background:var(--bg);color:var(--dim);border:1px solid var(--line);border-radius:6px;cursor:pointer;transition:all .14s}
+  .palette-pick button.on{background:rgba(255,45,120,.12);color:var(--accent);border-color:var(--accent)}
+
+  .go{font-family:'JetBrains Mono';font-size:14px;font-weight:600;padding:13px 26px;background:var(--accent);color:#0b0b0d;border:none;border-radius:9px;cursor:pointer;margin-top:20px;transition:opacity .15s}
+  .go:hover{opacity:.88}
+  .go:disabled{opacity:.4;cursor:not-allowed}
+
+  .out{display:none;margin-top:8px}
+  .out.show{display:block}
+  .result-grid{display:grid;gap:22px}
+  @media(min-width:820px){.result-grid{grid-template-columns:1.4fr 1fr}}
+
+  .canvas-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:rgba(0,0,0,.25)}
+  .canvas-card h3,.list-card h3{font-family:'Space Grotesk';font-size:15px;margin:0 0 4px;color:var(--text)}
+  .canvas-card .cap,.list-card .cap{font-size:11.5px;color:var(--dimmer);margin:0 0 14px;line-height:1.45}
+  #mapCanvas{width:100%;height:auto;image-rendering:pixelated;border-radius:8px;background:#111;display:block}
+  .dims{font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim);margin-top:10px;text-align:center}
+
+  .list-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:rgba(0,0,0,.25);max-height:620px;overflow-y:auto}
+  .blockrow{display:flex;align-items:center;gap:11px;padding:9px 6px;border-bottom:1px solid var(--line-soft,rgba(255,255,255,.05));cursor:pointer;transition:background .12s}
+  .blockrow:hover{background:rgba(255,255,255,.03)}
+  .swatch{width:26px;height:26px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14)}
+  .bname{font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);flex:1;line-height:1.3}
+  .bcount{font-family:'JetBrains Mono';font-size:12.5px;color:var(--accent);font-weight:600}
+  .bpct{font-family:'JetBrains Mono';font-size:10.5px;color:var(--dimmer);margin-left:4px}
+
+  .alts{display:none;padding:4px 6px 12px 43px;background:rgba(255,255,255,.015)}
+  .alts.show{display:block}
+  .alts .altrow{display:flex;align-items:center;gap:9px;padding:5px 0;font-family:'JetBrains Mono';font-size:11px;color:var(--dim)}
+  .alts .sw2{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.12)}
+  .alts .hint{font-size:10.5px;color:var(--dimmer);margin-bottom:5px}
+
+  .totals{display:flex;gap:18px;flex-wrap:wrap;font-family:'JetBrains Mono';font-size:12px;color:var(--dim);margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:9px}
+  .totals b{color:var(--accent)}
+  .copybtn{font-family:'JetBrains Mono';font-size:12px;padding:8px 14px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:7px;cursor:pointer;margin-top:12px;transition:all .14s}
+  .copybtn:hover{border-color:var(--accent);color:var(--accent)}
+
+  .note{font-size:12px;color:var(--dimmer);line-height:1.55;margin-top:18px;padding:14px 16px;border-left:2px solid var(--accent);background:rgba(255,45,120,.03);border-radius:0 8px 8px 0}
+  .note b{color:var(--dim)}
+  .ref-banner{display:none;font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:18px;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)}
+  .ref-banner.show{display:block}
+  .ref-banner b{color:var(--accent)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="mc-wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/tools/">← all tools</a>
+  </div>
+</nav>
+
+<main class="mc-wrap" style="padding-top:42px;padding-bottom:60px">
+
+  <div class="term-path" style="font-family:'JetBrains Mono';font-size:13px;color:var(--dim);margin-bottom:18px">// image to blocks · <span class="accent">experiments</span></div>
+
+  <h1 style="font-family:'Space Grotesk';font-size:clamp(30px,5vw,44px);line-height:1.08;margin:0 0 16px;color:var(--text)">
+    Turn any image into<br>Minecraft blocks.
+  </h1>
+
+  <p style="font-size:15px;color:var(--dim);line-height:1.6;max-width:620px;margin:0 0 30px">
+    Drop in an image and it gets colour-matched, pixel by pixel, against a palette of real Minecraft blocks with verified colours. Pick whether you're in Creative or Survival, set how big the build is, and get your blocks. No AI, no API, no guessing on colours: just maths against a hand-checked block list.
+  </p>
+
+  <!-- MODE -->
+  <div class="mode-toggle" id="modeToggle">
+    <button data-mode="flat" class="on">▦ Flat build</button>
+    <button data-mode="ref">◳ 3D reference</button>
+  </div>
+  <p class="mode-sub" id="modeSub">
+    <b style="color:var(--dim)">Flat build:</b> for pixel art, walls, floors, banners, facades, anything one block thick. You get a block-by-block map and <b style="color:var(--dim)">exact</b> counts, because every block is one cell in a flat grid.
+  </p>
+
+  <!-- UPLOAD -->
+  <div class="panel">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*">
+      <p class="big">Drop an image here, or tap to choose</p>
+      <p>PNG or JPG · stays in your browser, never uploaded</p>
+    </label>
+
+    <div id="afterUpload" class="hidden">
+      <div class="controls">
+        <div class="ctrl">
+          <label>build width: <span class="val" id="wLabel">64</span> blocks wide</label>
+          <input type="range" id="widthRange" min="16" max="192" value="64" step="1">
+          <div style="font-size:11px;color:var(--dimmer);margin-top:6px;font-family:'JetBrains Mono'" id="estDims"></div>
+        </div>
+
+        <div class="ctrl">
+          <label>mode</label>
+          <div class="seg" id="gameSeg">
+            <button data-game="creative" class="on">Creative · all blocks</button>
+            <button data-game="survival">Survival</button>
+          </div>
+          <div id="stageWrap" class="hidden" style="margin-top:12px">
+            <label>how far into the game?</label>
+            <select id="stageSel">
+              <option value="1">Stage 1 · just spawned (wood + stone tools)</option>
+              <option value="2">Stage 2 · settled in (iron, sheep, basic farms)</option>
+              <option value="3">Stage 3 · established (diamond, dyes, redstone)</option>
+              <option value="4">Stage 4 · been to the Nether</option>
+              <option value="5" selected>Stage 5 · end-game (the End, everything)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl" style="margin-top:18px">
+        <label>which block families to allow</label>
+        <div class="palette-pick" id="palettePick"></div>
+      </div>
+
+      <div class="ctrl" style="margin-top:18px">
+        <label>material <span style="color:var(--dimmer)">(build the whole thing in one material, or let it mix for the best colour match)</span></label>
+        <div class="seg" id="prefSeg">
+          <button data-pref="none" class="on">Mix freely · best colour</button>
+          <button data-pref="wool">All wool</button>
+          <button data-pref="concrete">All concrete</button>
+          <button data-pref="terracotta">All terracotta</button>
+        </div>
+      </div>
+
+      <button class="go" id="goBtn">Build it →</button>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <section class="out" id="out">
+    <div class="ref-banner" id="refBanner">
+      <b>Heads up, this is a reference, not a build plan.</b> A single photo only shows one or two faces of a 3D thing, so there's no honest way to know its full structure or give you a total block count. What you get below is the <b>matched block palette</b>, the real blocks whose colours best fit the image, so you can build it yourself in-game and know exactly which blocks to reach for. The structure is yours to build; these are your materials.
+    </div>
+
+    <div class="result-grid">
+      <div class="canvas-card">
+        <h3 id="canvasTitle">Block map</h3>
+        <p class="cap" id="canvasCap">Each cell is one block, viewed face-on. This is exactly what to place.</p>
+        <canvas id="mapCanvas"></canvas>
+        <div class="dims" id="dimsLine"></div>
+      </div>
+
+      <div class="list-card">
+        <h3>Blocks you'll need</h3>
+        <p class="cap" id="listCap">Tap any block to see close alternatives you could swap in.</p>
+        <div class="totals" id="totals"></div>
+        <div id="blockList"></div>
+        <button class="copybtn" id="copyBtn">Copy list as text</button>
+      </div>
+    </div>
+
+    <div class="note" id="honestNote"></div>
+  </section>
+
+  <footer style="margin-top:50px;padding-top:24px;border-top:1px solid var(--line);font-family:'JetBrains Mono';font-size:12px;color:var(--dimmer);line-height:1.7">
+    Built by <a href="https://www.vishkul.com" style="color:var(--dim)">Vishesh Kulshrestha</a> · part of <a href="/tools/" style="color:var(--dim)">vishkul/tools</a><br>
+    Block colours are verified texture-colour values, not map-item colours. Survival stage grouping is a sensible guide, not an official game ruling. Nothing is uploaded; the image is read in your browser and forgotten.
+  </footer>
+
+</main>
+
+<script src="/tools/assets/mc-blocks.js"></script>
+</body>
+</html>

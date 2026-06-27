@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Voice Extractor · What does your site sound like? · vishkul/tools</title>
+<meta name="description" content="Paste a URL and get a measured voice profile of the site's copy: tone, rhythm, formality, perspective, signature words, plus do's and don'ts and a paste-ready prompt for full guidelines.">
+<meta property="og:title" content="Brand Voice Extractor · vishkul/tools">
+<meta property="og:description" content="Turn any site's copy into a usable brand voice profile, measured from real linguistic signals.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  h1.title { font-family: var(--display); font-size: clamp(28px, 5.4vw, 42px); font-weight: 700;
+    line-height: 1.05; margin-top: 16px; letter-spacing: -0.035em; }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 60ch; line-height: 1.6; }
+
+  .scanbox { margin-top: 26px; }
+  .inputline { display: flex; align-items: stretch; border: 1px solid var(--border-2); border-radius: 9px;
+    overflow: hidden; background: var(--surface); transition: border-color .18s; }
+  .inputline:focus-within { border-color: var(--accent); }
+  .inputline .sigil { display: flex; align-items: center; padding: 0 4px 0 16px; color: var(--green); font-weight: 600; }
+  .inputline input { flex: 1; background: transparent; border: none; color: var(--text); font-family: var(--mono);
+    font-size: 15px; padding: 15px 12px; outline: none; min-width: 0; }
+  .inputline input::placeholder { color: var(--dimmer); }
+  .inputline button { background: var(--accent); color: #0b0b0d; border: none; font-family: var(--mono);
+    font-weight: 700; font-size: 14px; padding: 0 22px; cursor: pointer; white-space: nowrap; transition: filter .18s; }
+  .inputline button:hover { filter: brightness(1.08); }
+  .inputline button:disabled { filter: grayscale(0.4) brightness(0.7); cursor: default; }
+  .examples { margin-top: 12px; font-size: 12px; color: var(--dimmer); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .examples .chip { color: var(--dim); cursor: pointer; border-bottom: 1px dotted var(--border-2); transition: color .18s; }
+  .examples .chip:hover { color: var(--accent); }
+
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  .diag .line .er { color: var(--red); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent);
+    vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+
+  #report { margin-top: 28px; display: none; }
+
+  /* voice headline */
+  .voicecard { border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 12px;
+    padding: 24px; background: var(--surface); }
+  .vlabel { font-size: 11px; color: var(--dimmer); letter-spacing: 0.06em; }
+  .tone-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .tone { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--accent-dim); border: 1px solid var(--accent-line); border-radius: 6px; padding: 5px 12px; }
+  .vsummary { font-family: var(--display); font-weight: 500; font-size: clamp(18px, 3vw, 22px);
+    line-height: 1.4; margin-top: 16px; letter-spacing: -0.01em; }
+  .vmeta { margin-top: 12px; font-size: 12px; color: var(--dimmer); }
+  .vmeta .u { word-break: break-all; }
+
+  /* dimensions */
+  .dims { margin-top: 26px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .dim { padding: 16px 22px; border-bottom: 1px solid var(--border); }
+  .dim:last-child { border-bottom: none; }
+  .dim-top { display: flex; align-items: baseline; gap: 12px; }
+  .dim-label { font-family: var(--mono); font-size: 12.5px; color: var(--dim); width: 150px; flex: 0 0 auto; }
+  .dim-value { font-family: var(--body); font-weight: 600; font-size: 15px; color: var(--text); }
+  .dim-detail { font-family: var(--body); margin-top: 5px; margin-left: 162px; font-size: 13px; color: var(--dim); line-height: 1.55; }
+  .seg { margin-top: 9px; margin-left: 162px; display: flex; height: 6px; border-radius: 4px; overflow: hidden; max-width: 320px; background: var(--surface-2); }
+  .seg > i { display: block; height: 100%; }
+  .seg-key { margin-top: 6px; margin-left: 162px; font-family: var(--mono); font-size: 10.5px; color: var(--dimmer); display: flex; gap: 14px; }
+  @media (max-width:560px){ .dim-label{ width: 100%; } .dim-detail,.seg,.seg-key{ margin-left: 0; } }
+
+  /* vocabulary */
+  .block-head { margin-top: 32px; font-family: var(--display); font-weight: 600; font-size: 16px; }
+  .pills { margin-top: 12px; display: flex; gap: 7px; flex-wrap: wrap; }
+  .pill { font-family: var(--mono); font-size: 12px; color: var(--dim); border: 1px solid var(--border);
+    border-radius: 5px; padding: 5px 10px; background: var(--bg-soft); }
+  .pill::before { content: "#"; color: var(--accent); margin-right: 1px; }
+  .pill .c { color: var(--dimmer); margin-left: 4px; }
+  .pill.phrase::before { content: '" '; }
+  .pill.phrase::after { content: ' "'; color: var(--dimmer); }
+  .vnote { font-family: var(--body); margin-top: 12px; font-size: 13px; color: var(--dim); }
+  .buzzbox { margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 8px;
+    padding: 13px 16px; background: var(--surface); font-family: var(--body); font-size: 13px; color: var(--dim); }
+  .buzzbox b { color: var(--amber); font-weight: 600; }
+  .greenbox { margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--green); border-radius: 8px;
+    padding: 13px 16px; background: var(--surface); font-family: var(--body); font-size: 13px; color: var(--dim); }
+  .greenbox b { color: var(--green); font-weight: 600; }
+
+  /* dos / donts */
+  .dd { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width:620px){ .dd { grid-template-columns: 1fr; } }
+  .dd-col { border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; background: var(--surface); }
+  .dd-col h4 { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; margin-bottom: 10px; }
+  .dd-col.do h4 { color: var(--green); }
+  .dd-col.dont h4 { color: var(--red); }
+  .dd-col ul { list-style: none; }
+  .dd-col li { font-family: var(--body); font-size: 13px; color: var(--dim); line-height: 1.55; padding: 7px 0;
+    border-top: 1px solid var(--border); display: flex; gap: 9px; }
+  .dd-col li:first-child { border-top: none; }
+  .dd-col li .m { flex: 0 0 auto; }
+  .dd-col.do li .m { color: var(--green); }
+  .dd-col.dont li .m { color: var(--red); }
+
+  /* prompt export */
+  .promptwrap { margin-top: 32px; }
+  .promptwrap .ph { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .promptwrap .ph h3 { font-family: var(--display); font-weight: 600; font-size: 16px; }
+  .promptwrap .ph .hint { font-family: var(--body); font-size: 12.5px; color: var(--dimmer); }
+  .promptbox { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft); overflow: hidden; }
+  .promptbox .bar { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px;
+    background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  .promptbox .bar span { font-family: var(--mono); font-size: 11px; color: var(--dimmer); }
+  .copybtn { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); background: transparent;
+    border: 1px solid var(--accent-line); border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all .15s; }
+  .copybtn:hover { background: var(--accent-dim); }
+  .copybtn.done { color: var(--green); border-color: var(--green); }
+  .promptbox pre { font-family: var(--mono); font-size: 12px; color: var(--dim); line-height: 1.6; padding: 16px;
+    white-space: pre-wrap; word-break: break-word; max-height: 280px; overflow-y: auto; margin: 0; }
+
+  .errbox { margin-top: 26px; border: 1px solid var(--border); border-left: 2px solid var(--red); border-radius: 8px;
+    padding: 16px 18px; background: var(--surface); display: none; }
+  .errbox.notice { border-left-color: var(--amber); }
+  .errbox .er { color: var(--red); font-weight: 600; font-size: 14px; font-family: var(--body); }
+  .errbox.notice .er { color: var(--amber); }
+  .errbox .ed { color: var(--dim); font-size: 13px; margin-top: 6px; font-family: var(--body); line-height: 1.6; }
+
+  .rescan { margin-top: 22px; font-size: 13px; font-family: var(--mono); }
+  .rescan a { color: var(--accent); cursor: pointer; border-bottom: 1px dotted var(--accent-line); }
+  .footnote { margin: 44px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// brand voice extractor</div>
+    <h1 class="title">What does your<br>brand <span class="mark">sound</span> like?</h1>
+    <p class="sub">Everyone says their voice is "friendly and professional." This reads a site's actual copy and measures it: rhythm, formality, who it talks to, energy, the words it leans on. You get a profile you can hand to a writer or an AI, instead of a vibe.</p>
+  </header>
+
+  <section class="scanbox">
+    <div class="inputline">
+      <span class="sigil">$</span>
+      <input id="url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="yoursite.com" aria-label="Website URL to profile">
+      <button id="run" type="button">Read the voice</button>
+    </div>
+    <div class="examples">
+      <span>try:</span>
+      <span class="chip" data-url="stripe.com">stripe.com</span>
+      <span class="chip" data-url="duolingo.com">duolingo.com</span>
+      <span class="chip" data-url="basecamp.com">basecamp.com</span>
+      <span class="dimmer">·</span>
+      <span class="chip" id="demoLink">see a sample profile</span>
+    </div>
+  </section>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">brand-voice</span></span>
+      </div>
+      <div class="term-body"><div class="diag" id="diag"></div></div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errbox">
+    <div class="er" id="errTitle"></div>
+    <div class="ed" id="errDetail"></div>
+  </div>
+
+  <section id="report"></section>
+
+  <p class="footnote">
+    Measured from real linguistic signals in the page copy, not an AI guess. Nothing is stored; each read fetches the live page once.
+    <br>Built by <a href="/">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const urlInput = $("#url"), runBtn = $("#run");
+const consoleEl = $("#console"), diagEl = $("#diag");
+const reportEl = $("#report"), errBox = $("#errbox");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const STEPS = [
+  (u) => `<span class="ar">→</span> resolving <b>${esc(u)}</b>`,
+  ()  => `<span class="ar">→</span> fetching page`,
+  ()  => `<span class="ar">→</span> extracting readable copy`,
+  ()  => `<span class="ar">→</span> measuring sentence rhythm`,
+  ()  => `<span class="ar">→</span> scoring formality`,
+  ()  => `<span class="ar">→</span> mapping perspective (you vs we)`,
+  ()  => `<span class="ar">→</span> reading energy and tone`,
+  ()  => `<span class="ar">→</span> pulling signature vocabulary`,
+  ()  => `<span class="ar">→</span> writing the profile`,
+];
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+let busy = false;
+function startScan(raw){
+  const u = (raw || urlInput.value || "").trim();
+  if (!u || busy) return;
+  busy = true; runBtn.disabled = true;
+  errBox.style.display = "none"; errBox.className = "errbox";
+  reportEl.style.display = "none"; reportEl.innerHTML = "";
+  consoleEl.style.display = "block"; diagEl.innerHTML = "";
+  const fetchPromise = fetch("/api/voice?url=" + encodeURIComponent(u))
+    .then(async r => ({ ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }))
+    .catch(e => ({ ok: false, status: 0, data: { error: "Network error. Couldn't start the read.", detail: String(e) } }));
+  revealSteps(u, fetchPromise);
+}
+
+async function revealSteps(u, fetchPromise){
+  const delay = reduceMotion ? 0 : 150;
+  for (let i = 0; i < STEPS.length; i++){
+    const line = document.createElement("div");
+    line.className = "line"; line.innerHTML = STEPS[i](u);
+    diagEl.appendChild(line);
+    if (delay) await new Promise(r => setTimeout(r, delay));
+  }
+  const cur = document.createElement("span"); cur.className = "cursor"; diagEl.appendChild(cur);
+  const res = await fetchPromise;
+  cur.remove();
+
+  if (res.data && res.data.error){
+    fail(res.data.error); showBox(res.data.error, res.data.detail, false);
+  } else if (res.data && res.data.ok === false){
+    fail(res.data.message || "Not enough text to profile.");
+    showBox("Not enough readable copy on that page", res.data.message, true);
+  } else if (res.ok && res.data && res.data.ok){
+    const d = document.createElement("div"); d.className = "line";
+    d.innerHTML = `<span class="ok">✓ profiled</span> <span class="dimmer">· ${res.data.sample.words} words</span>`;
+    diagEl.appendChild(d);
+    renderReport(res.data);
+  } else {
+    fail("Something went wrong (HTTP " + res.status + ")."); showBox("Something went wrong", "HTTP " + res.status, false);
+  }
+  busy = false; runBtn.disabled = false;
+}
+
+function fail(msg){
+  const f = document.createElement("div"); f.className = "line";
+  f.innerHTML = `<span class="er">✕ ${esc(msg.length > 90 ? msg.slice(0,90)+"…" : msg)}</span>`;
+  diagEl.appendChild(f);
+}
+function showBox(title, detail, notice){
+  errBox.className = "errbox" + (notice ? " notice" : "");
+  $("#errTitle").textContent = title;
+  $("#errDetail").textContent = detail || "Try the full URL of a live, public, content-rich page.";
+  errBox.style.display = "block";
+}
+
+function renderReport(r){
+  const toneChips = r.tone.map(t => `<span class="tone">${esc(t)}</span>`).join("");
+
+  const dims = r.dimensions.map(d => {
+    let extra = "";
+    if (d.bars){
+      extra = `<div class="seg">
+          <i style="width:${d.bars.short}%;background:var(--accent)"></i>
+          <i style="width:${d.bars.medium}%;background:var(--accent-soft)"></i>
+          <i style="width:${d.bars.long}%;background:var(--dimmer)"></i>
+        </div>
+        <div class="seg-key"><span>${d.bars.short}% short</span><span>${d.bars.medium}% medium</span><span>${d.bars.long}% long</span></div>`;
+    } else if (d.ratio){
+      const tot = Math.max(1, d.ratio.you + d.ratio.we);
+      const yp = Math.round((d.ratio.you / tot) * 100);
+      extra = `<div class="seg">
+          <i style="width:${yp}%;background:var(--accent)"></i>
+          <i style="width:${100-yp}%;background:var(--dimmer)"></i>
+        </div>
+        <div class="seg-key"><span>you ${d.ratio.you}</span><span>we ${d.ratio.we}</span></div>`;
+    }
+    return `<div class="dim">
+        <div class="dim-top"><span class="dim-label">${esc(d.label)}</span><span class="dim-value">${esc(d.value)}</span></div>
+        <div class="dim-detail">${esc(d.detail)}</div>${extra}
+      </div>`;
+  }).join("");
+
+  const v = r.vocabulary;
+  let vocab = `<div class="block-head">Signature vocabulary</div>`;
+  if (v.signatureWords.length || v.phrases.length){
+    if (v.signatureWords.length)
+      vocab += `<div class="pills">` + v.signatureWords.map(w => `<span class="pill">${esc(w.word)}<span class="c">${w.count}</span></span>`).join("") + `</div>`;
+    if (v.phrases.length)
+      vocab += `<div class="pills" style="margin-top:9px">` + v.phrases.map(p => `<span class="pill phrase">${esc(p.phrase)}</span>`).join("") + `</div>`;
+  } else {
+    vocab += `<div class="vnote">No words repeat often enough to flag as signature terms. That can mean varied language, or simply a short page.</div>`;
+  }
+  if (v.buzzTotal >= 4)
+    vocab += `<div class="buzzbox"><b>Buzzword watch:</b> ${v.buzzTotal} corporate buzzwords (${v.buzzwords.slice(0,4).map(b=>esc(b.word)).join(", ")}${v.buzzwords.length>4?"…":""}). They blur a distinctive voice. Trade them for plain, specific language.</div>`;
+  else
+    vocab += `<div class="greenbox"><b>Clean:</b> the copy mostly avoids empty buzzwords. That keeps the voice specific and trustworthy.</div>`;
+
+  const dos = r.dos.map(x => `<li><span class="m">+</span><span>${esc(x)}</span></li>`).join("");
+  const donts = r.donts.map(x => `<li><span class="m">−</span><span>${esc(x)}</span></li>`).join("");
+
+  reportEl.innerHTML = `
+    <div class="voicecard">
+      <div class="vlabel">THE VOICE, IN ONE LINE</div>
+      <div class="tone-row">${toneChips}</div>
+      <div class="vsummary">${esc(r.summary)}</div>
+      <div class="vmeta">read from <span class="u">${esc(r.url)}</span> · ${r.sample.words} words, ${r.sample.sentences} sentences</div>
+    </div>
+
+    <div class="dims">${dims}</div>
+
+    ${vocab}
+
+    <div class="block-head">Do's and don'ts</div>
+    <div class="dd">
+      <div class="dd-col do"><h4>DO</h4><ul>${dos || '<li><span>Keep doing what works.</span></li>'}</ul></div>
+      <div class="dd-col dont"><h4>DON'T</h4><ul>${donts || '<li><span>No major risks flagged.</span></li>'}</ul></div>
+    </div>
+
+    <div class="promptwrap">
+      <div class="ph">
+        <h3>Want the full written guide?</h3>
+        <span class="hint">Copy this into ChatGPT, Claude, or any AI</span>
+      </div>
+      <div class="promptbox">
+        <div class="bar"><span>voice-guide-prompt.txt</span><button class="copybtn" id="copyBtn" type="button">Copy prompt</button></div>
+        <pre id="promptText">${esc(r.prompt)}</pre>
+      </div>
+    </div>
+
+    <div class="rescan"><a id="again">↑ profile another site</a></div>
+  `;
+  reportEl.style.display = "block";
+
+  $("#copyBtn").addEventListener("click", async () => {
+    const btn = $("#copyBtn");
+    try { await navigator.clipboard.writeText(r.prompt); }
+    catch { const t = document.createElement("textarea"); t.value = r.prompt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(e){} t.remove(); }
+    btn.textContent = "Copied ✓"; btn.classList.add("done");
+    setTimeout(() => { btn.textContent = "Copy prompt"; btn.classList.remove("done"); }, 2000);
+  });
+  $("#again").addEventListener("click", () => { window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"}); setTimeout(()=>urlInput.focus(),300); });
+  reportEl.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
+// ---- demo sample ----
+const SAMPLE = {
+  url: "https://example-saas.com",
+  ok: true,
+  sample: { words: 612, sentences: 58 },
+  summary: "Energetic, Conversational, Direct. It speaks straight to the reader in short, punchy sentences.",
+  tone: ["Energetic", "Conversational", "Direct"],
+  dimensions: [
+    { key:"rhythm", label:"Sentence rhythm", value:"Short and punchy", detail:"Averages 11 words per sentence. 52% short, 40% medium, 8% long.", bars:{ short:52, medium:40, long:8 } },
+    { key:"formality", label:"Formality", value:"Casual", detail:"Frequent contractions and everyday words." },
+    { key:"perspective", label:"Perspective", value:"Speaks to 'you'", detail:"Says 'you' 38 times vs 'we' 14. Strongly reader-focused.", ratio:{ you:38, we:14 } },
+    { key:"energy", label:"Energy", value:"Lively", detail:"9 call-to-action openers, 6 exclamations, 4 questions." },
+    { key:"reading", label:"Reading level", value:"Very accessible", detail:"Flesch-Kincaid grade about 6." }
+  ],
+  vocabulary: {
+    signatureWords: [{word:"team",count:11},{word:"work",count:9},{word:"project",count:7},{word:"faster",count:6},{word:"together",count:5},{word:"simple",count:4}],
+    phrases: [{phrase:"your team",count:6},{phrase:"get started",count:4},{phrase:"in minutes",count:3}],
+    buzzwords: [{word:"seamless",count:2},{word:"powerful",count:1}],
+    buzzTotal: 3
+  },
+  dos: [
+    "Keep addressing the reader as 'you'. Second person is the spine of this voice.",
+    "Favor short, punchy sentences. Averaging about 11 words keeps the momentum.",
+    "Open with verbs and calls to action; the energy is part of the identity.",
+    "Use contractions and everyday words. Sounding human is the point.",
+    "Reuse your signature words (team, work, project, faster) for consistency."
+  ],
+  donts: [
+    "Don't pad ideas into long, clause-heavy sentences. Brevity is part of the brand.",
+    "Don't go flat or passive. Drained energy reads as off-brand.",
+    "Don't slip into corporate stiffness or legalese."
+  ],
+  prompt: `You are a senior brand voice strategist. Using the measured profile and writing sample below, write a complete, practical brand voice and tone guide.
+
+MEASURED PROFILE
+- Tone: Energetic, Conversational, Direct
+- Sentence rhythm: Short and punchy (avg 11 words; 52% short, 40% medium, 8% long)
+- Formality: Casual
+- Perspective: Speaks to 'you' (Says 'you' 38 times vs 'we' 14. Strongly reader-focused.)
+- Energy: Lively
+- Reading level: Very accessible (grade ~6)
+- Signature words: team, work, project, faster, together, simple
+- Repeated phrases: "your team", "get started", "in minutes"
+
+WRITING SAMPLE
+"Your team works better when the busywork disappears. Get started in minutes, not weeks. No training required. Pull everything into one place and watch the chaos settle..."
+
+Produce: (1) a one-paragraph voice summary, (2) 4-6 voice principles with a short rationale each, (3) a "we sound like / we don't sound like" table, (4) three before/after rewrite examples, and (5) a quick checklist a writer can run before publishing. Keep it specific to this brand, not generic.`
+};
+
+function runDemo(){
+  errBox.style.display = "none";
+  consoleEl.style.display = "block"; diagEl.innerHTML = "";
+  busy = true; runBtn.disabled = true;
+  revealSteps(SAMPLE.url.replace("https://",""), Promise.resolve({ ok: true, status: 200, data: SAMPLE }));
+}
+
+runBtn.addEventListener("click", () => startScan());
+urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startScan(); });
+document.querySelectorAll(".chip[data-url]").forEach(c => c.addEventListener("click", () => { urlInput.value = c.dataset.url; startScan(c.dataset.url); }));
+$("#demoLink").addEventListener("click", runDemo);
+
+const params = new URLSearchParams(location.search);
+if (params.get("demo")) runDemo();
+else if (params.get("url")) { urlInput.value = params.get("url"); startScan(params.get("url")); }
+</script>
+</body>
+</html>

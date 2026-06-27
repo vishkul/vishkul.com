@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vishesh Kulshrestha · marketer who builds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b0d; --bg-soft:#111114; --bg-card:#141418; --bg-elev:#17171c;
+    --ink:#f2f1ee; --ink-soft:#a3a29c; --ink-faint:#6b6a64;
+    --pink:#ff2d78; --pink-soft:#ff5e96;--violet:#a06bff; --green:#3ddc84; --amber:#febc2e;
+    --line:#26262b; --line-soft:#1b1b20;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  ::selection{background:var(--pink);color:#0b0b0d}
+  a{color:inherit}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 26px}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  nav{position:sticky;top:0;z-index:60;background:rgba(11,11,13,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line-soft)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{font-family:'JetBrains Mono';font-weight:700;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;cursor:pointer;transition:color .18s}
+  .brand:hover{color:var(--pink)}
+  .brand .blink{width:9px;height:16px;background:var(--pink);display:inline-block;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .nav-links{display:flex;gap:26px}
+  .nav-links a{font-family:'JetBrains Mono';color:var(--ink-faint);text-decoration:none;font-size:13px;transition:color .18s}
+  .nav-links a:hover{color:var(--pink)}
+  @media(max-width:680px){
+    nav .wrap{gap:14px}
+    .nav-links{gap:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;justify-content:flex-end}
+    .nav-links::-webkit-scrollbar{display:none}
+    .nav-links a{font-size:12px;white-space:nowrap}
+  }
+  @media(max-width:430px){
+    .brand{font-size:13px}
+    .nav-links{gap:13px}
+    .nav-links a{font-size:11px}
+  }
+
+  .hero{padding:64px 0 26px}
+  .term-chrome{display:flex;align-items:center;gap:8px;margin-bottom:22px}
+  .term-chrome .d{width:11px;height:11px;border-radius:50%}
+  .term-chrome .label{font-family:'JetBrains Mono';font-size:12px;color:var(--ink-faint);margin-left:8px}
+  .cmdline{font-family:'JetBrains Mono';font-size:14px;color:var(--ink-soft);margin-bottom:22px;min-height:21px}
+  .cmdline .prompt{color:var(--green)}
+  .cmdline .tilde{color:#5ab0e0}
+  .cmdline .typed{color:var(--ink)}
+  .cmdline .cur{display:inline-block;width:9px;height:15px;background:var(--pink);margin-left:2px;vertical-align:baseline;animation:blink 1.1s steps(1) infinite}
+  .video-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:0 28px 70px -34px rgba(255,45,120,.30), 0 8px 36px -18px rgba(0,0,0,.85);background:#000}
+  .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .hero-pos{margin-top:42px;max-width:820px}
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:clamp(33px,5.6vw,58px);line-height:1.04;letter-spacing:-.035em;margin-bottom:22px}
+  h1 .mark{background:var(--pink);color:#0b0b0d;padding:0 .12em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+  .lead{font-size:clamp(15.5px,2vw,18px);color:var(--ink-soft);max-width:640px}
+  .lead b{color:var(--ink);font-weight:600}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:9px 20px;margin-top:26px;font-family:'JetBrains Mono';font-size:13px;color:var(--ink-faint)}
+  .hero-meta a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line);transition:.18s}
+  .hero-meta a:hover{color:var(--pink);border-color:var(--pink)}
+
+  section{padding:54px 0;border-top:1px solid var(--line-soft)}
+  .cmd-head{font-family:'JetBrains Mono';font-size:14px;margin-bottom:8px;color:var(--ink-soft)}
+  .cmd-head .prompt{color:var(--green)}
+  .cmd-head .path{color:var(--pink)}
+  .cmd-head .flag{color:var(--ink-faint)}
+  .sec-title{font-family:'Space Grotesk';font-weight:600;font-size:clamp(21px,3.4vw,29px);letter-spacing:-.02em;margin-bottom:6px;max-width:760px}
+  .sec-kicker{color:var(--ink-soft);font-size:15px;margin-bottom:30px;max-width:640px}
+  .proj-body{color:var(--ink-soft);font-size:16px;line-height:1.65;max-width:620px;margin-bottom:16px}
+  .proj-body strong{color:var(--ink);font-weight:600}
+  .pill-row{display:flex;flex-wrap:wrap;gap:7px;margin:18px 0 4px}
+  .pill{font-family:'JetBrains Mono';font-size:12px;color:var(--ink-soft);border:1px solid var(--line);border-radius:5px;padding:5px 11px;background:var(--bg-soft)}
+  .pill::before{content:"#";color:var(--pink);margin-right:1px}
+  .ledger{font-family:'JetBrains Mono';margin:24px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg-soft)}
+  .ledger .row{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+  .ledger .row:last-child{border-bottom:0}
+  .ledger .k{color:var(--ink-soft)}
+  .ledger .v{color:var(--pink);font-weight:600;font-size:15px}
+  .imgcard{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--bg-card);margin-top:14px}
+  .imgcard img{width:100%;display:block}
+  .imgcard .cap{padding:11px 15px;font-size:12.5px;color:var(--ink-faint);font-family:'JetBrains Mono';border-top:1px solid var(--line-soft)}
+  .img-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:14px}
+  @media(max-width:680px){.img-grid{grid-template-columns:1fr}}
+  .linkout{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono';color:var(--pink);text-decoration:none;font-weight:500;font-size:13.5px;margin-top:6px;transition:gap .18s}
+  .linkout::before{content:"\2192";transition:transform .18s}
+  .linkout:hover{gap:9px}
+  .doc-links{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:8px}
+  .work-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){.work-grid{grid-template-columns:1fr}}
+  .cat-boxes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}
+  @media(max-width:680px){.cat-boxes{grid-template-columns:1fr}}
+  .catbox{display:block;text-decoration:none;border:1px solid var(--line);border-top:3px solid var(--cat);border-radius:13px;padding:24px;background:var(--bg-card);transition:transform .16s,box-shadow .16s}
+  .catbox:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.32)}
+  .catbox.mk{--cat:var(--pink)}
+  .catbox.xp{--cat:var(--violet)}
+  .cb-top{display:flex;align-items:baseline;gap:10px}
+  .cb-top h4{font-family:'Space Grotesk';font-weight:600;font-size:19px;letter-spacing:-.02em;color:var(--ink)}
+  .cb-count{font-family:'JetBrains Mono';font-size:11px;color:var(--cat)}
+  .cb-sub{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-top:9px}
+  .cb-list{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .cb-list span{font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .cb-list span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cat);flex:0 0 auto}
+  .cb-list i{font-family:'JetBrains Mono';font-size:9px;font-style:normal;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+  .cb-cta{margin-top:18px;display:inline-block;font-family:'JetBrains Mono';font-size:12.5px;font-weight:600;color:var(--cat)}
+  .work-card{background:var(--bg-card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .18s,transform .18s}
+  .work-card:hover{border-color:var(--pink);transform:translateY(-3px)}
+  .work-card .thumb{aspect-ratio:16/9;overflow:hidden;border-bottom:1px solid var(--line-soft);background:var(--bg-soft)}
+  .work-card .thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .work-card .body{padding:17px 19px 19px}
+  .work-card .wtag{font-family:'JetBrains Mono';font-size:11px;color:var(--ink-faint);margin-bottom:7px}
+  .work-card .wtag::before{content:"// "}
+  .work-card h4{font-family:'Space Grotesk';font-weight:600;font-size:17.5px;margin-bottom:8px}
+  .work-card p{font-size:13.5px;color:var(--ink-soft)}
+  .texture{margin-top:16px}
+  .texture .imgcard img{max-height:430px;object-fit:cover;object-position:center 38%}
+  .skill-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  @media(max-width:760px){.skill-cols{grid-template-columns:1fr 1fr}}
+  @media(max-width:440px){.skill-cols{grid-template-columns:1fr}}
+  .skill-col h5{font-family:'JetBrains Mono';font-size:12px;color:var(--pink);margin-bottom:12px}
+  .skill-col h5::before{content:"\203A "}
+  .skill-col ul{list-style:none}
+  .skill-col li{font-family:'JetBrains Mono';font-size:13px;color:var(--ink-soft);padding:4px 0;border-bottom:1px solid var(--line-soft)}
+  footer{padding:54px 0 64px;border-top:1px solid var(--line-soft)}
+  footer .fcmd{font-family:'JetBrains Mono';font-size:14px;color:var(--ink-soft);margin-bottom:18px}
+  footer .fcmd .prompt{color:var(--green)}
+  footer .ftitle{font-family:'Space Grotesk';font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;margin-bottom:22px}
+  footer .ftitle .mark{background:var(--pink);color:#0b0b0d;padding:0 .1em}
+  footer .fcontact{display:flex;flex-wrap:wrap;gap:12px 22px;font-family:'JetBrains Mono';font-size:14px;align-items:center}
+  footer .fcontact a{color:var(--pink);text-decoration:none}
+  footer .fcontact a:hover{color:var(--pink-soft)}
+  footer .fsep{color:var(--ink-faint)}
+  footer .fnote{margin-top:24px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink-faint)}
+  @media(prefers-reduced-motion:reduce){.blink,.cur{animation:none}}
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand" aria-label="Back to home">vishesh<span class="blink"></span></a>
+    <div class="nav-links">
+      <a href="#neuromind">~/campaign</a>
+      <a href="#optimus">~/ai-build</a>
+      <a href="#oimedia">~/gtm</a>
+      <a href="#content">~/growth</a>
+      <a href="#work">~/work</a>
+      <a href="/tools/">~/tools</a>
+      <a href="https://drive.google.com/file/d/1VNbgjFeeJrXYuZU6lLEn1AbSx8RgyopE/preview" target="_blank" rel="noopener" style="color:var(--pink)">résumé.pdf</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="term-chrome">
+      <span class="d" style="background:#ff5f57"></span>
+      <span class="d" style="background:#febc2e"></span>
+      <span class="d" style="background:#28c840"></span>
+      <span class="label">vishesh / campaign reel</span>
+    </div>
+    <div class="cmdline"><span class="prompt">vishesh@work</span>:<span class="tilde">~</span>$ <span class="typed" id="typed"></span><span class="cur"></span></div>
+    <div class="video-frame">
+      <iframe src="https://www.youtube.com/embed/g7nUWtYTPAI?rel=0" title="NeuroMind campaign film" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <div class="hero-pos">
+      <h1>I build things people <span class="mark">use</span>, and make things people <span class="mark">watch</span>.</h1>
+      <p class="lead">Final-year B.Com working across marketing, content, and go-to-market, who also builds with AI well enough to ship real systems. <b>The film above is a fictional product campaign I wrote, shot, acted in, and edited myself.</b></p>
+      <div class="hero-meta">
+        <span>Bengaluru, IN</span>
+        <a href="mailto:vishkul2905@gmail.com">vishkul2905@gmail.com</a>
+        <a href="https://wa.me/917001769748" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="#optimus">the AI build &#8594;</a>
+        <a href="#tools-suite">the live tools &#8594;</a>
+        <a href="#oimedia">the GTM work &#8594;</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="neuromind">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> open <span class="path">~/neuromind</span> <span class="flag">--campaign</span></div>
+    <div class="sec-title">A campaign for a product that doesn't exist</div>
+    <div class="sec-kicker">Concept, brand, and creative, invented and executed solo.</div>
+    <p class="proj-body">NeuroMind is a fictional neural-implant brand I built a satirical campaign around. I created the brand identity, wrote the positioning, and produced the ad creative: <strong>scripting, storyboarding, acting in, shooting, and editing</strong> every piece. The campaign has a real point of view. It sells a brain chip while quietly arguing you don't need one. I also made an <strong>AI-deepfaked product-review video</strong> in the style of a well-known tech reviewer, doing the voice and face work myself.</p>
+    <p class="proj-body">The film at the top of the page is the centerpiece. Below is the brand world: the Instagram identity and campaign art, all designed for this project.</p>
+    <div class="pill-row">
+      <span class="pill">scriptwriting</span><span class="pill">storyboarding</span><span class="pill">on-camera</span><span class="pill">video-editing</span><span class="pill">brand-identity</span><span class="pill">ai-deepfake</span><span class="pill">art-direction</span>
+    </div>
+    <div class="imgcard">
+      <img src="assets/neuromind-ig.png" alt="NeuroMind Instagram brand grid">
+      <div class="cap">NeuroMind brand world. Instagram identity, campaign art, and product visuals, designed for the project</div>
+    </div>
+  </div>
+</section>
+
+<section id="optimus">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> ./run <span class="path">optimus</span> <span class="flag">--sre-agent</span></div>
+    <div class="sec-title">An autonomous AI system, built in 8 days with zero code background</div>
+    <div class="sec-kicker">AI Engineering Internship · Optimus Information Inc.</div>
+    <p class="proj-body">I joined Optimus with a marketing and content background. I had never written code, never opened VS Code, never touched an API. The brief was one line: build something useful with AI. Eight working days later I had shipped <strong>SRE Agent</strong>, an autonomous incident-response system that watches JIRA for critical tickets, pulls logs from Azure, runs a structured Claude diagnosis, and posts a full root-cause analysis back to the ticket in under 60 seconds.</p>
+    <p class="proj-body">I didn't write the Python by hand. I directed AI tools to build it, which is the actual point. The skill here is <strong>turning a vague problem into a working system by thinking clearly and directing AI precisely</strong>, then having the judgment to catch it when the output was wrong.</p>
+    <div class="ledger">
+      <div class="row"><span class="k">eval score across 7 scenarios</span><span class="v">0.89 / 1.00</span></div>
+      <div class="row"><span class="k">full AI diagnosis per incident</span><span class="v">&lt; 60 sec</span></div>
+      <div class="row"><span class="k">total build time</span><span class="v">8 days</span></div>
+      <div class="row"><span class="k">live production integrations</span><span class="v">3</span></div>
+    </div>
+    <div class="pill-row">
+      <span class="pill">python (ai-built)</span><span class="pill">claude-api</span><span class="pill">jira-cloud</span><span class="pill">azure-app-insights</span><span class="pill">postgresql/neon</span><span class="pill">prompt-engineering</span>
+    </div>
+    <div class="imgcard">
+      <img src="assets/sre-architecture.png" alt="SRE Agent system architecture">
+      <div class="cap">System architecture. JIRA detection, log aggregation, Claude diagnosis, decision gate, database</div>
+    </div>
+    <p class="proj-body" style="margin-top:24px">I documented the whole thing: a write-up on how a non-engineer ships a system like this with AI, the final presentation, and the full system design.</p>
+    <div class="doc-links">
+      <a class="linkout" href="https://drive.google.com/file/d/1Ggm1EzdLPx5twd7KNz8P2ENWWYSb2Uiu/preview" target="_blank" rel="noopener">process: how I built it with AI</a>
+      <a class="linkout" href="https://drive.google.com/file/d/10a0IJMlRT62HOoJbi4LFqpBYU4TwXG-v/preview" target="_blank" rel="noopener">the presentation deck</a>
+      <a class="linkout" href="https://drive.google.com/file/d/1kzGR6oPN_n64n7wIhhxrfH-4YyRvlHDW/preview" target="_blank" rel="noopener">full system design doc</a>
+    </div>
+  </div>
+</section>
+
+<section id="tools-suite">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> ./run <span class="path">~/tools</span> <span class="flag">--live</span></div>
+    <div class="sec-title">Tools I built, live on this site</div>
+    <div class="sec-kicker">Most marketers buy their stack. I build mine.</div>
+    <p class="proj-body">AI is changing how customers find brands and how copy gets judged, so instead of writing about that shift I built tools for it and shipped them on my own infrastructure. Two kinds live here, all free, no signup. <strong>This is the part of "marketer who builds" you can actually click.</strong></p>
+    <div class="cat-boxes">
+      <a class="catbox mk" href="/tools/#marketing">
+        <div class="cb-top"><h4>Marketing tools</h4><span class="cb-count">3 live</span></div>
+        <p class="cb-sub">Sharp, single-purpose tools for what AI is doing to marketing right now.</p>
+        <div class="cb-list"><span>AEO Checker</span><span>Brand Voice Extractor</span><span>Cold Email Teardown</span></div>
+        <span class="cb-cta">open marketing tools &#8594;</span>
+      </a>
+      <a class="catbox xp" href="/tools/#experiments">
+        <div class="cb-top"><h4>Experiments</h4><span class="cb-count">3 live</span></div>
+        <p class="cb-sub">Things I built because I couldn't not. Less useful, more fun, no AI under the hood.</p>
+        <div class="cb-list"><span>Brand from a Word</span><span>Browser X-ray</span><span>Reverse-Prompt</span></div>
+        <span class="cb-cta">open experiments &#8594;</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="oimedia">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> cat <span class="path">~/oimedia</span> <span class="flag">--gtm</span></div>
+    <div class="sec-title">Go-to-market &amp; product work for a B2B SaaS</div>
+    <div class="sec-kicker">GTM / Strategy Internship · OiMedia (SignifAI &amp; ComplAI)</div>
+    <p class="proj-body">Over ~135 hours at OiMedia, a retail-tech SaaS company, I did the go-to-market work the marketing function actually runs on. I <strong>built an Ideal Customer Profile framework</strong> combining firmographic, operational, and psychographic segmentation; produced <strong>TAM market sizing</strong>; contributed to a <strong>Salesforce AppExchange listing</strong>; ran <strong>field research</strong> with independent retailers across Bengaluru; and <strong>authored a set of white papers</strong> on retail compliance and OOH media.</p>
+    <p class="proj-body">I also designed <strong>ComplAI</strong>, a mobile-first field-audit product, in Figma, mapping the full photo-capture, checklist, and auto-report workflow for on-site auditors.</p>
+    <div class="pill-row">
+      <span class="pill">icp-framework</span><span class="pill">tam-sizing</span><span class="pill">market-research</span><span class="pill">positioning</span><span class="pill">figma/ux</span><span class="pill">white-papers</span><span class="pill">salesforce-appexchange</span>
+    </div>
+    <div class="img-grid">
+      <div class="imgcard">
+        <img src="assets/complai-figma.png" alt="ComplAI mobile compliance flows in Figma">
+        <div class="cap">ComplAI, mobile-first audit flows in Figma</div>
+      </div>
+      <div class="imgcard">
+        <img src="assets/oimedia-whitepapers.png" alt="White papers authored for OiMedia">
+        <div class="cap">White papers authored on retail compliance &amp; OOH media</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="content">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> stat <span class="path">~/growth</span> <span class="flag">--audience</span></div>
+    <div class="sec-title">Content &amp; audience growth</div>
+    <div class="sec-kicker">Built a real audience from zero, and got brands to pay for it.</div>
+    <p class="proj-body">I grew a gaming YouTube channel to <strong>~10,000 subscribers and 851,000+ views</strong> as a teenager, learning audience retention, SEO, packaging, and consistency by doing it. The channel earned real revenue and <strong>attracted paying sponsors</strong>. I negotiated and integrated the brand deals myself, and my sponsored segments held retention at or above the channel average.</p>
+    <div class="ledger">
+      <div class="row"><span class="k">subscribers, grown from zero</span><span class="v">~10K</span></div>
+      <div class="row"><span class="k">lifetime views</span><span class="v">851K+</span></div>
+      <div class="row"><span class="k">watch-time hours</span><span class="v">43.1K</span></div>
+      <div class="row"><span class="k">brand sponsorships</span><span class="v">delivered, paid</span></div>
+    </div>
+    <div class="img-grid">
+      <div class="imgcard">
+        <img src="assets/yt-analytics.png" alt="YouTube channel analytics">
+        <div class="cap">Channel analytics: views, watch time, revenue</div>
+      </div>
+      <div class="imgcard">
+        <img src="assets/yt-sponsor.png" alt="Audience retention graph">
+        <div class="cap">Audience retention across a sponsored video</div>
+      </div>
+    </div>
+    <div class="imgcard" style="margin-top:13px">
+      <img src="assets/yt-video-analytics.png" alt="Single video analytics in YouTube Studio">
+      <div class="cap">Per-video performance in YouTube Studio: 15.3K views and 1.1K watch-hours on a single upload</div>
+    </div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> ls <span class="path">~/work</span> <span class="flag">--shipped</span></div>
+    <div class="sec-title">Selected work</div>
+    <div class="sec-kicker">Design and web work shipped for real organizations.</div>
+    <div class="work-grid">
+      <div class="work-card">
+        <div class="thumb"><img src="assets/ndfe-site.png" alt="National Digital Freight Exchange live site"></div>
+        <div class="body">
+          <div class="wtag">web · webflow · for SemiCab &#215; CII</div>
+          <h4>National Digital Freight Exchange</h4>
+          <p>Designed and built this live multi-page B2B site for a CII supply-chain initiative. Hero, data-led value proposition, whitepaper, and navigation, all in Webflow.</p>
+          <a class="linkout" href="https://ndfe-35a30b-7438edbf9aa4a-c70f61652b9d0.webflow.io" target="_blank" rel="noopener">view live site</a>
+        </div>
+      </div>
+      <div class="work-card">
+        <div class="thumb"><img src="assets/yb-pamphlet.png" alt="Youth Brigade donor pamphlet"></div>
+        <div class="body">
+          <div class="wtag">collateral · print &amp; social</div>
+          <h4>Youth Brigade donor collateral</h4>
+          <p>Redesigned the donor-facing pamphlet used to raise funds, plus a set of social posters. Information design built to persuade potential donors and investors.</p>
+        </div>
+      </div>
+    </div>
+    <div class="texture">
+      <div class="imgcard">
+        <img src="assets/reapbenefit-teaching.png" alt="Teaching financial literacy to students, ReapBenefit">
+        <div class="cap">Teaching financial literacy to students · ReapBenefit, Bengaluru</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <div class="cmd-head"><span class="prompt">$</span> which <span class="path">tools</span></div>
+    <div class="sec-title">What I work with</div>
+    <div style="height:14px"></div>
+    <div class="skill-cols">
+      <div class="skill-col"><h5>marketing &amp; gtm</h5><ul><li>content strategy</li><li>go-to-market</li><li>icp &amp; segmentation</li><li>market research</li><li>positioning</li></ul></div>
+      <div class="skill-col"><h5>content &amp; creative</h5><ul><li>scriptwriting</li><li>video editing</li><li>on-camera</li><li>storyboarding</li><li>audience growth</li></ul></div>
+      <div class="skill-col"><h5>ai &amp; building</h5><ul><li>prompt engineering</li><li>ai-assisted dev</li><li>claude / claude code</li><li>automation</li><li>reading architecture</li></ul></div>
+      <div class="skill-col"><h5>design &amp; tools</h5><ul><li>figma</li><li>photoshop</li><li>webflow</li><li>premiere pro</li><li>notion</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fcmd"><span class="prompt">vishesh@work</span>:~$ ./contact</div>
+    <div class="ftitle">Let's <span class="mark">talk</span>.</div>
+    <div class="fcontact">
+      <a href="mailto:vishkul2905@gmail.com">vishkul2905@gmail.com</a>
+      <span class="fsep">·</span>
+      <a href="https://wa.me/917001769748" target="_blank" rel="noopener">WhatsApp</a>
+      <span class="fsep">·</span>
+      <a href="https://drive.google.com/file/d/1VNbgjFeeJrXYuZU6lLEn1AbSx8RgyopE/preview" target="_blank" rel="noopener">résumé.pdf</a>
+      <span class="fsep">·</span>
+      <span style="color:var(--ink-soft)">Bengaluru, India</span>
+    </div>
+    <div class="fnote">vishesh kulshrestha · marketing · content · ai</div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var el = document.getElementById('typed');
+    if(!el) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var text = 'play campaign-reel.mp4';
+    if(reduce){ el.textContent = text; return; }
+    var i = 0;
+    function tick(){ if(i <= text.length){ el.textContent = text.slice(0,i); i++; setTimeout(tick, 55); } }
+    setTimeout(tick, 450);
+  })();
+</script>
+</body>
+</html>

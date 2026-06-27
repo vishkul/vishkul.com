@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand from a Word · type a word, get a brand · vishkul/tools</title>
+<meta name="description" content="Type one word and watch an algorithm generate a complete mini brand: palette, font pairing, logo mark, live mockups, and the reasoning behind every choice. No AI, pure procedural generation. Export it.">
+<meta property="og:title" content="Brand from a Word · vishkul/tools">
+<meta property="og:description" content="One word in, a whole brand out. Palette, type, logo, mockups, generated live. Remix endlessly.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Lato:wght@400;700&family=Nunito:wght@400;600;700&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/assets/tools.css">
+<style>
+  /* this is an Experiment -> violet accent instead of the marketing pink */
+  :root { --accent: #a06bff; --accent-line: rgba(160,107,255,0.42); --accent-dim: rgba(160,107,255,0.13); }
+
+  .lede { margin-top: 40px; }
+  .kicker { font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  .kicker .lab { color: var(--dimmer); }
+  h1.title { font-family: var(--display); font-size: clamp(28px, 5.4vw, 42px); font-weight: 700; line-height: 1.05; margin-top: 16px; letter-spacing: -0.035em; }
+  .sub { font-family: var(--body); margin-top: 16px; color: var(--dim); font-size: 15.5px; max-width: 58ch; line-height: 1.6; }
+
+  .scanbox { margin-top: 26px; }
+  .inputline { display: flex; align-items: stretch; border: 1px solid var(--border-2); border-radius: 9px; overflow: hidden; background: var(--surface); transition: border-color .18s; }
+  .inputline:focus-within { border-color: var(--accent); }
+  .inputline .sigil { display: flex; align-items: center; padding: 0 4px 0 16px; color: var(--green); font-weight: 600; }
+  .inputline input { flex: 1; background: transparent; border: none; color: var(--text); font-family: var(--mono); font-size: 15px; padding: 15px 12px; outline: none; min-width: 0; }
+  .inputline input::placeholder { color: var(--dimmer); }
+  .inputline button { background: var(--accent); color: #0b0b0d; border: none; font-family: var(--mono); font-weight: 700; font-size: 14px; padding: 0 22px; cursor: pointer; white-space: nowrap; transition: filter .18s; }
+  .inputline button:hover { filter: brightness(1.08); }
+  .inputline button:disabled { filter: grayscale(0.4) brightness(0.7); cursor: default; }
+  .examples { margin-top: 12px; font-size: 12px; color: var(--dimmer); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .examples .chip { color: var(--dim); cursor: pointer; border-bottom: 1px dotted var(--border-2); }
+  .examples .chip:hover { color: var(--accent); }
+  .examples .lucky { color: var(--accent); cursor: pointer; font-weight: 600; border-bottom: 1px dotted var(--accent-line); margin-left: 2px; }
+
+  #console { margin-top: 26px; display: none; }
+  .diag { font-size: 13.5px; line-height: 1.9; }
+  .diag .line { opacity: 0; animation: fade .25s forwards; }
+  .diag .line .ar { color: var(--accent); }
+  .diag .line .ok { color: var(--green); }
+  @keyframes fade { to { opacity: 1; } }
+  .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); vertical-align: text-bottom; animation: blink 1s steps(2) infinite; }
+
+  #board { margin-top: 28px; display: none; }
+  .board-anim { animation: rise .4s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .lockup { border-radius: 14px; padding: 40px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; overflow: hidden; }
+  .lockup .logomark { flex: 0 0 auto; }
+  .lockup .wm { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .lockup .word { font-size: clamp(34px, 7vw, 58px); line-height: 1; letter-spacing: -0.02em; word-break: break-word; }
+  .lockup .tagline { font-size: 14px; opacity: 0.88; font-family: 'Inter', sans-serif; }
+
+  .row-head { margin-top: 28px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--dimmer); text-transform: uppercase; }
+
+  /* mockups */
+  .mocks { margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .mk { display: flex; flex-direction: column; gap: 7px; align-items: center; }
+  .mk-lbl { font-family: var(--mono); font-size: 10px; color: var(--dimmer); }
+  .mk-av { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .mk-av span { font-size: 34px; font-weight: 700; line-height: 1; }
+  .mk-btn { padding: 13px 22px; border-radius: 9px; font-size: 15px; font-weight: 700; display: flex; align-items: center; }
+  .mk-card { width: 230px; height: 132px; border-radius: 11px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+  .mc-word { font-size: 26px; font-weight: 700; line-height: 1; }
+  .mc-sub { font-family: var(--mono); font-size: 11px; opacity: 0.7; }
+  .mc-bar { height: 6px; width: 54px; border-radius: 3px; }
+
+  .palette { margin-top: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  @media (max-width:520px){ .palette { grid-template-columns: repeat(3, 1fr); } }
+  .sw { border-radius: 9px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; transition: transform .12s; }
+  .sw:hover { transform: translateY(-2px); }
+  .sw .chip { height: 62px; }
+  .sw .meta { padding: 7px 9px; background: var(--surface); }
+  .sw .hex { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
+  .sw .role { font-family: var(--mono); font-size: 9.5px; color: var(--dimmer); margin-top: 1px; }
+
+  .pairing { margin-top: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); overflow: hidden; }
+  .pair-row { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .pair-row:last-child { border-bottom: none; }
+  .pair-tag { font-family: var(--mono); font-size: 11px; color: var(--dimmer); }
+  .pair-tag b { color: var(--dim); font-weight: 600; }
+  .pair-display { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin-top: 6px; color: var(--text); }
+  .pair-body { font-size: 15px; line-height: 1.55; margin-top: 8px; color: var(--dim); max-width: 60ch; }
+
+  .voice { margin-top: 12px; border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: 9px; background: var(--surface); padding: 16px 18px; }
+  .voice .vt { font-family: var(--mono); font-size: 11px; color: var(--dimmer); letter-spacing: 0.06em; }
+  .voice .vl { font-family: var(--body); font-size: 16px; color: var(--text); margin-top: 6px; }
+
+  .why { margin-top: 14px; font-family: var(--mono); font-size: 12.5px; color: var(--dim); line-height: 1.6; display: flex; gap: 8px; }
+  .why .p { color: var(--green); flex: 0 0 auto; }
+
+  .exportbar { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .exportbar button { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--dim); background: var(--surface); border: 1px solid var(--border-2); border-radius: 8px; padding: 9px 14px; cursor: pointer; transition: all .15s; }
+  .exportbar button:hover { color: var(--accent); border-color: var(--accent-line); }
+  .exportbar button.done { color: var(--green); border-color: var(--green); }
+
+  .controls { margin-top: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .controls button { font-family: var(--mono); font-weight: 700; font-size: 13.5px; cursor: pointer; border-radius: 8px; padding: 11px 20px; transition: all .15s; }
+  .remix { background: var(--accent); color: #0b0b0d; border: none; }
+  .remix:hover { filter: brightness(1.08); }
+  .wild { background: transparent; color: var(--accent); border: 1px solid var(--accent-line); }
+  .wild:hover { background: var(--accent-dim); }
+  .again { background: transparent; color: var(--dim); border: 1px solid var(--border-2); font-weight: 600; }
+  .again:hover { color: var(--accent); border-color: var(--accent-line); }
+
+  .errbox { margin-top: 20px; border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 8px; padding: 14px 18px; background: var(--surface); display: none; }
+  .errbox .er { color: var(--amber); font-weight: 600; font-size: 14px; font-family: var(--body); }
+  .errbox .ed { color: var(--dim); font-size: 13px; margin-top: 5px; font-family: var(--body); }
+
+  .bprompt { border: 1px solid var(--accent-line); border-radius: 11px; background: linear-gradient(180deg,var(--accent-dim),transparent); overflow: hidden; margin-top: 12px; }
+  .bprompt .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 15px; border-bottom:1px solid var(--border); }
+  .bprompt .bar span { font-family:var(--mono); font-size:11px; color:var(--accent); letter-spacing:.05em; text-transform:uppercase; }
+  .bprompt pre { font-family:var(--mono); font-size:12.5px; color:var(--dim); line-height:1.6; padding:15px; white-space:pre-wrap; word-break:break-word; margin:0; max-height:260px; overflow-y:auto; }
+  .bprompt .copybtn { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--accent); background:transparent; border:1px solid var(--accent-line); border-radius:6px; padding:5px 12px; cursor:pointer; transition:all .15s; }
+  .bprompt .copybtn:hover { background:var(--accent-dim); }
+  .bprompt .copybtn.done { color:var(--green); border-color:var(--green); }
+  .footnote { margin: 44px 0 60px; font-size: 12px; color: var(--dimmer); line-height: 1.7; }
+  .footnote a { color: var(--dim); border-bottom: 1px dotted var(--border-2); }
+  .footnote a:hover { color: var(--accent); }
+</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar">
+    <a class="brand" href="/"><b>vishkul</b> <span class="dimmer">/</span> <span class="accent">tools</span><span class="blink"></span></a>
+    <a class="back" href="/">← portfolio</a>
+  </nav>
+
+  <header class="lede">
+    <div class="kicker">// brand from a word <span class="lab">· experiment</span></div>
+    <h1 class="title">Type a word.<br>Get a <span class="mark">brand</span>.</h1>
+    <p class="sub">One word in, a whole identity out: a palette, a font pairing, a logo, live mockups, and a voice direction, generated on the spot and explained. No AI, no stock library, just an algorithm making real design decisions. Remix it, roll a wildcard, then export what you like.</p>
+  </header>
+
+  <section class="scanbox">
+    <div class="inputline">
+      <span class="sigil">$</span>
+      <input id="word" type="text" autocomplete="off" spellcheck="false" maxlength="24" placeholder="glacier" aria-label="A word to brand">
+      <button id="run" type="button">Generate</button>
+    </div>
+    <div class="examples">
+      <span>try:</span>
+      <span class="chip" data-w="glacier">glacier</span>
+      <span class="chip" data-w="riot">riot</span>
+      <span class="chip" data-w="honey">honey</span>
+      <span class="chip" data-w="velvet">velvet</span>
+      <span class="chip" data-w="nova">nova</span>
+      <span class="lucky" id="lucky">🎲 surprise me</span>
+    </div>
+  </section>
+
+  <section id="console">
+    <div class="term">
+      <div class="term-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-path">~/tools/<span class="accent">brand-from-a-word</span></span>
+      </div>
+      <div class="term-body"><div class="diag" id="diag"></div></div>
+    </div>
+  </section>
+
+  <div class="errbox" id="errbox">
+    <div class="er" id="errTitle"></div>
+    <div class="ed" id="errDetail"></div>
+  </div>
+
+  <section id="board"></section>
+
+  <p class="footnote">
+    Every choice is procedural and deterministic: the same word gives the same brand. Colors come from color theory, type from curated pairings, logic from the word itself. No AI involved.
+    <br>Built by <a href="/">Vishesh Kulshrestha</a> · part of <a href="index.html">vishkul/tools</a>.
+  </p>
+
+</div>
+
+<script>
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0);}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+function hslToHex(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const k=n=>(n+h/30)%12;const a=s*Math.min(l,1-l);const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));const to=x=>Math.round(255*x).toString(16).padStart(2,'0');return ('#'+to(f(0))+to(f(8))+to(f(4))).toUpperCase();}
+function lum(hex){const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;const f=c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);}
+function contrast(a,b){const la=lum(a),lb=lum(b);return (Math.max(la,lb)+0.05)/(Math.min(la,lb)+0.05);}
+
+const MOODS={
+  electric:{sat:[82,94],light:[52,58],harmony:'complementary',dlabel:'Anton',blabel:'Inter',marks:['block','slash'],note:'high-energy',voice:['Loud on purpose. Impossible to ignore.','Maximum energy, zero apology.','This brand does not whisper.']},
+  fresh:{sat:[70,88],light:[58,66],harmony:'triadic',dlabel:'Poppins',blabel:'Nunito',marks:['bubble','block'],note:'playful',voice:['Bright, playful, a little cheeky.','Friendly first. The kind of brand people root for.','Fun, without trying too hard.']},
+  serene:{sat:[26,42],light:[55,64],harmony:'analogous',dlabel:'Work Sans',blabel:'Inter',marks:['thin','ring'],note:'calm and minimal',voice:['Calm, clear, quietly confident.','Less noise. More room to breathe.','Understated on purpose.']},
+  warm:{sat:[55,72],light:[50,58],harmony:'analogous',dlabel:'Fraunces',blabel:'Inter',marks:['serif','bubble'],note:'warm and organic',voice:['Warm, human, easy to trust.','Made to feel handmade.','Honest, grounded, a little nostalgic.']},
+  refined:{sat:[18,34],light:[40,50],harmony:'mono',dlabel:'Playfair Display',blabel:'Lato',marks:['serif','thin'],note:'refined and premium',voice:['Quietly premium. Nothing to prove.','Elegant, restrained, expensive.','Luxury that lowers its voice.']},
+  precise:{sat:[60,78],light:[52,60],harmony:'complementary',dlabel:'Space Grotesk',blabel:'Inter',marks:['geo','slash'],note:'modern and precise',voice:['Sharp, modern, engineered.','Built for people who notice details.','Clean lines, clear thinking.']}
+};
+const WORD_MAP={fire:[12,'electric'],flame:[16,'electric'],blast:[8,'electric'],pulse:[330,'electric'],neon:[150,'electric'],volt:[55,'electric'],spark:[42,'electric'],riot:[2,'electric'],rush:[20,'electric'],surge:[210,'electric'],bolt:[50,'electric'],rebel:[0,'electric'],blaze:[18,'electric'],pop:[330,'fresh'],bloom:[330,'fresh'],juice:[35,'fresh'],zest:[48,'fresh'],joy:[48,'fresh'],candy:[330,'fresh'],sprout:[110,'fresh'],sunny:[48,'fresh'],mango:[35,'fresh'],berry:[320,'fresh'],splash:[195,'fresh'],mist:[205,'serene'],cloud:[210,'serene'],calm:[200,'serene'],glacier:[200,'serene'],frost:[200,'serene'],snow:[210,'serene'],zen:[150,'serene'],still:[210,'serene'],linen:[40,'serene'],dawn:[30,'serene'],haze:[220,'serene'],drift:[205,'serene'],quiet:[215,'serene'],ice:[195,'serene'],honey:[42,'warm'],ember:[20,'warm'],clay:[20,'warm'],hearth:[24,'warm'],harvest:[35,'warm'],amber:[40,'warm'],maple:[28,'warm'],rust:[18,'warm'],terra:[22,'warm'],spice:[18,'warm'],cocoa:[25,'warm'],dune:[40,'warm'],sand:[42,'warm'],velvet:[280,'refined'],noir:[250,'refined'],gilded:[45,'refined'],onyx:[250,'refined'],regal:[270,'refined'],luxe:[280,'refined'],marble:[220,'refined'],couture:[300,'refined'],slate:[215,'refined'],midnight:[240,'refined'],obsidian:[250,'refined'],nova:[260,'precise'],vertex:[210,'precise'],cipher:[200,'precise'],quantum:[250,'precise'],pixel:[190,'precise'],vector:[215,'precise'],axiom:[205,'precise'],flux:[180,'precise'],orbit:[230,'precise'],helix:[185,'precise'],cobalt:[220,'precise'],red:[2,'electric'],crimson:[348,'refined'],orange:[28,'fresh'],gold:[45,'refined'],yellow:[50,'fresh'],lime:[85,'fresh'],green:[135,'serene'],forest:[135,'warm'],emerald:[150,'refined'],teal:[178,'precise'],ocean:[205,'serene'],sky:[205,'serene'],blue:[215,'precise'],indigo:[245,'refined'],violet:[272,'refined'],purple:[280,'refined'],plum:[290,'refined'],pink:[330,'fresh'],rose:[345,'warm'],coral:[10,'fresh'],peach:[25,'fresh'],silver:[210,'serene']};
+const LUCKY=["glacier","riot","honey","velvet","nova","ember","mist","cobalt","bloom","noir","spark","dune","quantum","frost","mango","obsidian","pulse","zen","terra","helix","blaze","linen","orbit","gilded"];
+
+function resolve(word){
+  const w=word.toLowerCase().replace(/[^a-z]/g,'');
+  if(!w) return {hue:210,mood:'precise',matched:false,reasonWord:''};
+  if(WORD_MAP[w]){const[h,m]=WORD_MAP[w];return{hue:h,mood:m,matched:true,reasonWord:w};}
+  for(const k in WORD_MAP){if(w.length>=4&&k.length>=4&&(w.includes(k)||k.includes(w))){const[h,m]=WORD_MAP[k];return{hue:h,mood:m,matched:'partial',reasonWord:k};}}
+  const hard=(w.match(/[ktpbdgxzqj]/g)||[]).length,soft=(w.match(/[lmnsfwhr]/g)||[]).length,vowels=(w.match(/[aeiou]/g)||[]).length;
+  const vr=vowels/Math.max(1,w.length);let mood;
+  if(w.length>=8)mood='refined';else if(hard>=3&&w.length<=6)mood='electric';else if(vr>=0.5&&w.length<=6)mood='fresh';else if(soft>hard&&hard<=1)mood='serene';else mood='precise';
+  return{hue:hashStr(w)%360,mood,matched:false,reasonWord:w};
+}
+function generate(word,variant,wild){
+  const r=resolve(word);
+  const rng=mulberry32(hashStr(word.toLowerCase())+variant*7919+(wild?104729:0));
+  let moodKey=r.mood;
+  if(wild){const keys=Object.keys(MOODS);moodKey=keys[Math.floor(rng()*keys.length)];}
+  const M=MOODS[moodKey];
+  const pick=a=>a[Math.floor(rng()*a.length)],inR=([a,b])=>a+rng()*(b-a);
+  let hue;
+  if(wild)hue=Math.floor(rng()*360);
+  else if(variant===0)hue=r.hue;
+  else hue=hashStr(word.toLowerCase()+'#'+variant)%360;
+  const sat=inR(M.sat),light=inR(M.light);
+  const primary=hslToHex(hue,sat,light),primaryDark=hslToHex(hue,Math.min(100,sat+6),Math.max(12,light-22));
+  let aHue;if(M.harmony==='complementary')aHue=(hue+180)%360;else if(M.harmony==='analogous')aHue=(hue+(rng()<0.5?30:-30)+360)%360;else if(M.harmony==='triadic')aHue=(hue+120)%360;else aHue=hue;
+  const accent=M.harmony==='mono'?hslToHex(hue,Math.max(0,sat-12),Math.min(92,light+30)):hslToHex(aHue,Math.min(100,sat+4),Math.min(72,light+8));
+  const ink=hslToHex(hue,14,9),paper=hslToHex(hue,16,96);
+  const palette={primary,primaryDark,accent,ink,paper};
+  const onPrimary=contrast(primary,ink)>=contrast(primary,paper)?ink:paper;
+  const mark=pick(M.marks);
+  let why;
+  if(wild)why=`Wildcard: ignored what "${word}" means and rolled ${M.note} instead.`;
+  else if(variant===0){
+    if(r.matched===true)why=`"${word}" reads ${M.note}, so it pulled ${M.harmony==='mono'?'a tonal':'a '+M.harmony} palette and a ${M.dlabel} display face.`;
+    else if(r.matched==='partial')why=`"${word}" echoes "${r.reasonWord}" (${M.note}), set in ${M.dlabel}.`;
+    else why=`"${word}" has no fixed meaning, so its sound carried it: a ${M.note} read in ${M.dlabel}.`;
+  } else why=`Remix: same ${M.note} feel as "${word}", rolled to a fresh color.`;
+  return{word,mood:moodKey,note:M.note,harmony:M.harmony,palette,onPrimary,pairing:{display:M.dlabel,body:M.blabel},mark,voice:pick(M.voice),why,variant,wild:!!wild};
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function markInner(style, letter, P){
+  const L=esc(letter.toUpperCase()), on=P.onPrimary, pri=P.palette.primary, df=P.pairing.display;
+  const t=(col,w,size)=>`<text x="48" y="49" text-anchor="middle" dominant-baseline="central" font-family="'${df}', sans-serif" font-weight="${w}" font-size="${size}" fill="${col}">${L}</text>`;
+  if(style==="block")return `<rect x="6" y="6" width="84" height="84" rx="20" fill="${on}"/>${t(pri,700,52)}`;
+  if(style==="geo")return `<rect x="6" y="6" width="84" height="84" rx="6" fill="${on}"/>${t(pri,700,50)}<rect x="14" y="14" width="9" height="9" fill="${pri}"/><rect x="73" y="73" width="9" height="9" fill="${pri}"/>`;
+  if(style==="bubble")return `<circle cx="48" cy="48" r="44" fill="${on}"/>${t(pri,700,52)}`;
+  if(style==="ring")return `<circle cx="48" cy="48" r="41" fill="none" stroke="${on}" stroke-width="7"/>${t(on,600,46)}`;
+  if(style==="thin")return `${t(on,300,60)}<circle cx="78" cy="22" r="5" fill="${on}"/>`;
+  if(style==="serif")return `${t(on,600,62)}<rect x="26" y="80" width="44" height="3" rx="1.5" fill="${on}"/>`;
+  if(style==="slash")return `<rect x="6" y="6" width="84" height="84" rx="16" fill="${on}"/>${t(pri,700,50)}<path d="M70 78 L82 78 L82 66 Z" fill="${pri}"/>`;
+  return `<rect x="6" y="6" width="84" height="84" rx="18" fill="${on}"/>${t(pri,700,52)}`;
+}
+function markSVG(P){ return `<svg width="84" height="84" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">${markInner(P.mark,P.word[0],P)}</svg>`; }
+function appIconSVG(P,size){ const s=(size*0.62/96).toFixed(4),off=(size*0.19).toFixed(2),r=(size*0.22).toFixed(1);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><rect width="${size}" height="${size}" rx="${r}" fill="${P.palette.primary}"/><g transform="translate(${off},${off}) scale(${s})">${markInner(P.mark,P.word[0],P)}</g></svg>`; }
+
+const $ = (s) => document.querySelector(s);
+const wordEl = $("#word"), runBtn = $("#run");
+const consoleEl = $("#console"), diagEl = $("#diag"), boardEl = $("#board"), errBox = $("#errbox");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const STEPS = [
+  (w) => `<span class="ar">→</span> reading <b>${esc(w)}</b>`,
+  () => `<span class="ar">→</span> sensing the mood`,
+  () => `<span class="ar">→</span> mixing the palette`,
+  () => `<span class="ar">→</span> pairing the type`,
+  () => `<span class="ar">→</span> drawing the mark`,
+];
+
+let busy = false, currentWord = "", variant = 0, wild = false, B = null;
+
+function start(raw, v, w){
+  const word = (raw != null ? raw : wordEl.value).trim();
+  if (busy) return;
+  errBox.style.display = "none";
+  if (!word || !/[a-zA-Z]/.test(word)) {
+    boardEl.style.display = "none";
+    $("#errTitle").textContent = "Give me a word";
+    $("#errDetail").textContent = "Type any single word, a feeling, an object, a made-up name, and I'll build a brand around it.";
+    errBox.style.display = "block";
+    return;
+  }
+  currentWord = word; variant = v || 0; wild = !!w;
+  busy = true; runBtn.disabled = true;
+  boardEl.style.display = "none"; boardEl.innerHTML = "";
+  consoleEl.style.display = "block"; diagEl.innerHTML = "";
+  reveal(word);
+}
+async function reveal(w){
+  const delay = reduceMotion ? 0 : 150;
+  for (let i = 0; i < STEPS.length; i++){
+    const line = document.createElement("div"); line.className = "line"; line.innerHTML = STEPS[i](w);
+    diagEl.appendChild(line);
+    if (delay) await new Promise(r => setTimeout(r, delay));
+  }
+  const cur = document.createElement("span"); cur.className = "cursor"; diagEl.appendChild(cur);
+  if (delay) await new Promise(r => setTimeout(r, 180));
+  cur.remove();
+  const d = document.createElement("div"); d.className = "line"; d.innerHTML = `<span class="ok">✓ brand generated</span>`;
+  diagEl.appendChild(d);
+  render(generate(currentWord, variant, wild));
+  busy = false; runBtn.disabled = false;
+}
+
+function render(b){
+  B = b;
+  const P = b.palette, disp = b.pairing.display, L = esc(b.word[0].toUpperCase());
+  const brandPrompt = `I'm building a brand called "${b.word}". Here's its identity, generated by a design tool:
+
+- Personality: ${b.note}
+- Colors: primary ${P.primary}, accent ${P.accent}, deep ${P.primaryDark}, neutrals ${P.ink} and ${P.paper}
+- Type: ${b.pairing.display} for headlines, ${b.pairing.body} for body
+- Voice: ${b.voice}
+
+Using exactly this identity and voice, write:
+1. A one-line tagline
+2. A two-sentence "about" blurb
+3. A homepage hero headline and subhead
+4. Three social bios, each under 150 characters
+
+Keep everything consistent with the ${b.note} personality. Don't change the brand name.`;
+  const swatch = (hex, role) => {
+    const border = lum(hex) > 0.8 ? "border:1px solid var(--border-2)" : "";
+    return `<div class="sw" data-hex="${hex}"><div class="chip" style="background:${hex};${border}"></div><div class="meta"><div class="hex">${hex}</div><div class="role">${role}</div></div></div>`;
+  };
+  const sentence = "The quick brown fox jumps over the lazy dog, and the brand still reads clean.";
+  boardEl.innerHTML = `
+    <div class="board-anim">
+      <div class="lockup" style="background:${P.primary}">
+        <div class="logomark">${markSVG(b)}</div>
+        <div class="wm">
+          <div class="word" style="color:${b.onPrimary};font-family:'${disp}',sans-serif;font-weight:700">${esc(b.word)}</div>
+          <div class="tagline" style="color:${b.onPrimary}">${esc(b.voice)}</div>
+        </div>
+      </div>
+
+      <div class="row-head">in the wild</div>
+      <div class="mocks">
+        <div class="mk">${appIconSVG(b,80)}<span class="mk-lbl">app icon</span></div>
+        <div class="mk"><div class="mk-av" style="background:${P.primary}"><span style="color:${b.onPrimary};font-family:'${disp}',sans-serif">${L}</span></div><span class="mk-lbl">avatar</span></div>
+        <div class="mk"><div class="mk-btn" style="background:${P.primary};color:${b.onPrimary};font-family:'${b.pairing.body}',sans-serif">Get started</div><span class="mk-lbl">button</span></div>
+        <div class="mk"><div class="mk-card" style="background:${P.paper}"><div class="mc-word" style="color:${P.primary};font-family:'${disp}',sans-serif">${esc(b.word)}</div><div class="mc-sub" style="color:${P.ink}">hello@${esc(b.word.toLowerCase())}.co</div><div class="mc-bar" style="background:${P.accent}"></div></div><span class="mk-lbl">card</span></div>
+      </div>
+
+      <div class="row-head">palette · ${b.harmony} <span style="text-transform:none;color:var(--dimmer)">· tap a swatch to copy</span></div>
+      <div class="palette">
+        ${swatch(P.primary, "primary")}
+        ${swatch(P.primaryDark, "deep")}
+        ${swatch(P.accent, "accent")}
+        ${swatch(P.ink, "ink")}
+        ${swatch(P.paper, "paper")}
+      </div>
+
+      <div class="row-head">type pairing</div>
+      <div class="pairing">
+        <div class="pair-row">
+          <div class="pair-tag">display · <b>${esc(b.pairing.display)}</b></div>
+          <div class="pair-display" style="font-family:'${disp}',serif;font-weight:700">${esc(b.word)} <span style="color:var(--dimmer)">Aa</span></div>
+        </div>
+        <div class="pair-row">
+          <div class="pair-tag">body · <b>${esc(b.pairing.body)}</b></div>
+          <div class="pair-body" style="font-family:'${b.pairing.body}',sans-serif">${sentence}</div>
+        </div>
+      </div>
+
+      <div class="row-head">voice direction</div>
+      <div class="voice">
+        <div class="vt">HOW IT SHOULD SOUND</div>
+        <div class="vl" style="font-family:'${b.pairing.body}',sans-serif">${esc(b.voice)}</div>
+      </div>
+
+      <div class="why"><span class="p">$</span><span>${esc(b.why)}</span></div>
+
+      <div class="row-head">take it further</div>
+      <div class="bprompt">
+        <div class="bar"><span>brand-to-copy prompt</span><button class="copybtn" id="copyBrandPrompt" type="button">Copy prompt</button></div>
+        <pre>${esc(brandPrompt)}</pre>
+      </div>
+
+      <div class="exportbar">
+        <button id="copyPal" type="button">⧉ Copy palette</button>
+        <button id="dlLogo" type="button">↓ Logo (SVG)</button>
+        <button id="copyLink" type="button">🔗 Copy link</button>
+      </div>
+      <div class="controls">
+        <button class="remix" id="remix" type="button">⟳ Remix colors</button>
+        <button class="wild" id="wildBtn" type="button">✦ Wildcard</button>
+        <button class="again" id="again" type="button">↑ new word</button>
+      </div>
+    </div>
+  `;
+  boardEl.style.display = "block";
+
+  document.querySelectorAll(".sw").forEach(sw => sw.addEventListener("click", () => copyText(sw.dataset.hex, null)));
+  $("#remix").addEventListener("click", () => { if (busy) return; variant++; wild = false; render(generate(currentWord, variant, false)); });
+  $("#wildBtn").addEventListener("click", () => { if (busy) return; variant++; wild = true; render(generate(currentWord, variant, true)); });
+  $("#again").addEventListener("click", () => { window.scrollTo({top:0,behavior:reduceMotion?"auto":"smooth"}); setTimeout(()=>{wordEl.focus();wordEl.select();},300); });
+
+  $("#copyPal").addEventListener("click", (e) => copyText(`${P.primary}  ${P.primaryDark}  ${P.accent}  ${P.ink}  ${P.paper}`, e.target));
+  $("#copyLink").addEventListener("click", (e) => {
+    const u = location.origin + location.pathname + `?word=${encodeURIComponent(b.word)}&v=${b.variant}` + (b.wild ? "&w=1" : "");
+    copyText(u, e.target);
+  });
+  $("#dlLogo").addEventListener("click", () => {
+    const svg = appIconSVG(b, 512);
+    const blob = new Blob([svg], {type:"image/svg+xml"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${b.word.toLowerCase()}-logo.svg`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    flash($("#dlLogo"), "Saved ✓");
+  });
+  const cbp=$("#copyBrandPrompt"); if(cbp) cbp.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(brandPrompt); }catch{ const t=document.createElement("textarea"); t.value=brandPrompt; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(e){} t.remove(); } cbp.textContent="Copied ✓"; cbp.classList.add("done"); setTimeout(()=>{cbp.textContent="Copy prompt"; cbp.classList.remove("done");},1800); });
+  boardEl.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+}
+
+async function copyText(text, btn){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t=document.createElement("textarea"); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand("copy");}catch(e){} t.remove(); }
+  if (btn) flash(btn, "Copied ✓");
+}
+function flash(btn, msg){ const o=btn.textContent; btn.textContent=msg; btn.classList.add("done"); setTimeout(()=>{btn.textContent=o; btn.classList.remove("done");}, 1600); }
+
+runBtn.addEventListener("click", () => start());
+wordEl.addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+document.querySelectorAll(".chip[data-w]").forEach(c => c.addEventListener("click", () => { wordEl.value = c.dataset.w; start(c.dataset.w); }));
+$("#lucky").addEventListener("click", () => { const w = LUCKY[Math.floor(Math.random()*LUCKY.length)]; wordEl.value = w; start(w); });
+
+const params = new URLSearchParams(location.search);
+if (params.get("demo")) { wordEl.value = "glacier"; start("glacier"); }
+else if (params.get("word")) { const w = params.get("word"); wordEl.value = w; start(w, parseInt(params.get("v")||"0",10), params.get("w")==="1"); }
+</script>
+</body>
+</html>
