@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pixel-to-blocks/ · vishkul tools</title>
-<meta name="description" content="Turn any image into a Minecraft build. Colour-matched to real blocks with exact counts, real block textures, version and progression aware. No AI, no API.">
+<meta name="description" content="A Minecraft build helper. Point it at a reference image: which blocks it uses, which you can get at your stage, and roughly how many. Plus a pixel-art mode with exact counts. No AI, no API.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/tools/assets/tools.css">
+<link rel="stylesheet" href="/tools/assets/tools.css?v=1782603774">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   .mc-wrap{max-width:1080px;margin:0 auto;padding:0 20px}
@@ -40,12 +40,19 @@
   .palette-pick{display:flex;flex-wrap:wrap;gap:7px}
   .palette-pick button{font-family:'JetBrains Mono';font-size:11.5px;padding:6px 10px;background:var(--bg);color:var(--dim);border:1px solid var(--line);border-radius:6px;cursor:pointer;transition:all .14s}
   .palette-pick button.on{background:rgba(255,45,120,.12);color:var(--accent);border-color:var(--accent)}
+  .size-row{display:flex;gap:10px}
+  .size-row .sz{flex:1}
+  .size-row input[type=number]{width:100%;font-family:'JetBrains Mono';font-size:14px;padding:9px 10px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;text-align:center}
+  .size-row .szlab{font-family:'JetBrains Mono';font-size:11px;color:var(--dimmer);text-align:center;margin-top:5px}
+  .chk{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:12px;color:var(--dim);cursor:pointer;margin-top:4px}
+  .chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
   .go{font-family:'JetBrains Mono';font-size:14px;font-weight:600;padding:13px 26px;background:var(--accent);color:#0b0b0d;border:none;border-radius:9px;cursor:pointer;margin-top:22px;transition:opacity .15s}
   .go:hover{opacity:.88}
   .out{display:none;margin-top:8px}
   .out.show{display:block}
   .result-grid{display:grid;gap:22px}
   @media(min-width:820px){.result-grid{grid-template-columns:1.4fr 1fr}}
+  .result-grid.solo{grid-template-columns:1fr;max-width:560px}
   .canvas-card,.list-card{border:1px solid var(--line);border-radius:12px;padding:16px;background:rgba(0,0,0,.25)}
   .canvas-card h3,.list-card h3{font-family:'Space Grotesk';font-size:15px;margin:0 0 4px;color:var(--text)}
   .canvas-card .cap,.list-card .cap{font-size:11.5px;color:var(--dimmer);margin:0 0 12px;line-height:1.45}
@@ -57,19 +64,25 @@
   #mapCanvas{width:100%;height:auto;image-rendering:pixelated;display:block}
   #inspectTip{display:none;position:sticky;bottom:0;left:0;font-family:'JetBrains Mono';font-size:12px;color:var(--text);background:rgba(10,10,14,.94);border-top:1px solid var(--line);padding:8px 12px}
   #inspectTip b{color:var(--accent)}
-  .list-card{max-height:640px;overflow-y:auto}
+  .list-card{max-height:660px;overflow-y:auto}
   .render-toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:12px}
   .render-toggle button{font-family:'JetBrains Mono';font-size:11.5px;padding:7px 13px;background:transparent;color:var(--dim);border:none;cursor:pointer;transition:all .15s}
   .render-toggle button.on{background:var(--accent);color:#0b0b0d;font-weight:600}
   .render-note{font-size:11px;color:var(--dimmer);line-height:1.5;margin:-2px 0 14px}
   .blockrow{display:flex;align-items:center;gap:9px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .12s}
   .blockrow:hover{background:rgba(255,255,255,.03)}
+  .blockrow.locked{opacity:.5}
   .swatch{width:24px;height:24px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.14)}
   .btex{width:24px;height:24px;border-radius:5px;flex-shrink:0;image-rendering:pixelated;border:1px solid rgba(255,255,255,.14)}
   .bnotex{display:flex;align-items:center;justify-content:center;color:var(--dimmer);font-family:'JetBrains Mono';font-size:13px;background:rgba(255,255,255,.03)}
-  .bname{font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);flex:1;line-height:1.3}
-  .bcount{font-family:'JetBrains Mono';font-size:12.5px;color:var(--accent);font-weight:600;white-space:nowrap}
+  .bname{font-family:'JetBrains Mono';font-size:12.5px;color:var(--text);flex:1;line-height:1.3;display:flex;flex-direction:column;gap:2px}
+  .bcov{font-size:10px;color:var(--dimmer)}
+  .bright{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .bcount{font-family:'JetBrains Mono';font-size:12.5px;color:var(--accent);font-weight:600}
   .bpct{font-family:'JetBrains Mono';font-size:10.5px;color:var(--dimmer);margin-left:4px}
+  .tag-get{font-family:'JetBrains Mono';font-size:9.5px;font-weight:600;color:#3ddc84;background:rgba(61,220,132,.1);border:1px solid rgba(61,220,132,.3);border-radius:4px;padding:2px 6px;letter-spacing:.03em}
+  .tag-lock{font-family:'JetBrains Mono';font-size:9.5px;font-weight:600;color:#ff7a90;background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.3);border-radius:4px;padding:2px 6px;letter-spacing:.03em}
+  .tag-get.sm,.tag-lock.sm{font-size:8.5px;padding:1px 4px}
   .alts{display:none;padding:4px 6px 12px 42px;background:rgba(255,255,255,.015)}
   .alts.show{display:block}
   .alts .altrow{display:flex;align-items:center;gap:9px;padding:5px 0;font-family:'JetBrains Mono';font-size:11px;color:var(--dim)}
@@ -81,9 +94,6 @@
   .copybtn:hover{border-color:var(--accent);color:var(--accent)}
   .note{font-size:12px;color:var(--dimmer);line-height:1.55;margin-top:18px;padding:14px 16px;border-left:2px solid var(--accent);background:rgba(255,45,120,.03);border-radius:0 8px 8px 0}
   .note b{color:var(--dim)}
-  .ref-banner{display:none;font-size:12.5px;color:var(--dim);line-height:1.5;margin-bottom:18px;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)}
-  .ref-banner.show{display:block}
-  .ref-banner b{color:var(--accent)}
   .hidden{display:none!important}
 </style>
 </head>
@@ -96,13 +106,13 @@
 </nav>
 <main class="mc-wrap" style="padding-top:42px;padding-bottom:60px">
   <div class="term-path" style="font-family:'JetBrains Mono';font-size:13px;color:var(--dim);margin-bottom:18px">// pixel to blocks &middot; <span class="accent">experiments</span></div>
-  <h1 style="font-family:'Space Grotesk';font-size:clamp(30px,5vw,44px);line-height:1.08;margin:0 0 16px;color:var(--text)">A Minecraft builder<br>that reads your image.</h1>
-  <p class="lead">Drop or paste an image and it gets colour-matched, cell by cell, to real Minecraft blocks. Set your version and how you play, then get the blocks: a zoomable map you can read square by square, exact counts, real block textures, and a list you can copy straight into your build. Verified colours, no AI, no API.</p>
+  <h1 style="font-family:'Space Grotesk';font-size:clamp(30px,5vw,44px);line-height:1.08;margin:0 0 16px;color:var(--text)">Building this in Minecraft?<br>Here's what you'll need.</h1>
+  <p class="lead">Point it at a reference image and it tells you which Minecraft blocks the thing is made of, which ones you can get at your Survival stage, and roughly how many. Build it freehand from your reference; this is your materials list. There's also a pixel-art mode for flat builds with exact counts. Verified colours, real textures, no AI, no API.</p>
   <div class="mode-toggle" id="modeToggle">
-    <button data-mode="flat" class="on">&#9638; Flat build</button>
-    <button data-mode="ref">&#9651; 3D reference</button>
+    <button data-mode="helper" class="on">&#9874; Build helper</button>
+    <button data-mode="pixel">&#9638; Pixel art</button>
   </div>
-  <p class="mode-sub" id="modeSub"><b>Flat build</b> &mdash; pixel art, walls, floors, facades: anything one block thick. You get a block map and <b>exact</b> counts, because every block is one cell in a flat grid.</p>
+  <p class="mode-sub" id="modeSub"><b>Build helper</b> &mdash; for building a real 3D thing (a house, a tower) freehand from a reference. Tells you which blocks it uses, which you can get at your stage, and roughly how many. You build it by eye; this is your materials list.</p>
   <div class="panel">
     <label class="drop" id="drop">
       <input type="file" id="file" accept="image/*">
@@ -112,35 +122,52 @@
     </label>
     <div id="afterUpload" class="hidden">
       <div class="controls">
-        <div class="ctrl">
+        <!-- SIZE inputs: build helper only -->
+        <div class="ctrl" id="sizeBox">
+          <label>roughly how big? <span style="color:var(--dimmer)">(in blocks)</span></label>
+          <div class="size-row">
+            <div class="sz"><input type="number" id="bWide" value="12" min="1" max="256"><div class="szlab">wide</div></div>
+            <div class="sz"><input type="number" id="bTall" value="20" min="1" max="256"><div class="szlab">tall</div></div>
+            <div class="sz"><input type="number" id="bDepth" value="10" min="1" max="256"><div class="szlab">deep</div></div>
+          </div>
+          <div class="subnote">used for a rough block estimate. eyeball it from your reference; depth is front-to-back.</div>
+        </div>
+        <!-- WIDTH slider: pixel art only -->
+        <div class="ctrl hidden" id="widthBox">
           <label>build width: <span class="val" id="wLabel">64</span> blocks</label>
           <input type="range" id="widthRange" min="16" max="192" value="64" step="1">
           <div class="subnote" id="estDims"></div>
         </div>
+
         <div class="ctrl">
           <label>Minecraft version: <span class="val" id="verLabel">1.21 (latest)</span></label>
           <input type="range" id="verRange" min="0" max="7" value="7" step="1">
           <div class="subnote">limits the palette to blocks that existed in that version. concrete &amp; glazed arrive in 1.12; nether blocks 1.16; deepslate 1.17.</div>
         </div>
       </div>
+
       <div class="controls" style="margin-top:18px">
         <div class="ctrl">
           <label>mode</label>
           <div class="seg" id="gameSeg">
-            <button data-game="creative" class="on">Creative &middot; all blocks</button>
-            <button data-game="survival">Survival</button>
+            <button data-game="survival" class="on">Survival</button>
+            <button data-game="creative">Creative &middot; all blocks</button>
           </div>
-          <div id="stageWrap" class="hidden" style="margin-top:12px">
+          <div id="stageWrap" style="margin-top:12px">
             <label>how far into the game?</label>
             <select id="stageSel">
               <option value="1">Stage 1 &middot; just spawned (wood + stone)</option>
               <option value="2">Stage 2 &middot; settled in (iron, sheep, basic farms)</option>
-              <option value="3">Stage 3 &middot; established (diamond, dyes, redstone)</option>
+              <option value="3" selected>Stage 3 &middot; established (diamond, dyes, redstone)</option>
               <option value="4">Stage 4 &middot; been to the Nether</option>
-              <option value="5" selected>Stage 5 &middot; end-game (the End, everything)</option>
+              <option value="5">Stage 5 &middot; end-game (the End, everything)</option>
             </select>
           </div>
+          <div id="onlyGetWrap" style="margin-top:12px">
+            <label class="chk"><input type="checkbox" id="onlyGet"> only show blocks I can get now</label>
+          </div>
         </div>
+
         <div class="ctrl">
           <label>material</label>
           <div class="seg" id="prefSeg">
@@ -152,17 +179,19 @@
           <div class="subnote">build in one material, or mix for the closest colour match.</div>
         </div>
       </div>
+
       <div class="ctrl" style="margin-top:18px">
         <label>block families to allow</label>
         <div class="palette-pick" id="palettePick"></div>
       </div>
-      <button class="go" id="goBtn">Build it &rarr;</button>
+
+      <button class="go" id="goBtn">Work out the blocks &rarr;</button>
     </div>
   </div>
+
   <section class="out" id="out">
-    <div class="ref-banner" id="refBanner"><b>This is a reference, not a build plan.</b> A single photo only shows one or two faces of a 3D thing, so there's no honest way to know its full structure or give a total block count. Below is the <b>matched block palette</b>: the real blocks whose colours best fit the image. Build the structure yourself in-game; these are your materials.</div>
     <div class="result-grid">
-      <div class="canvas-card">
+      <div class="canvas-card hidden" id="mapCard">
         <div class="map-bar">
           <div><h3 id="canvasTitle" style="margin:0">Block map</h3></div>
           <div class="zoomctl">
@@ -171,12 +200,12 @@
             <button id="zoomIn" title="zoom in">+</button>
           </div>
         </div>
-        <p class="cap" id="canvasCap">Each cell is one block, face-on. Hover to see which block a cell is. Zoom to build row by row.</p>
+        <p class="cap" id="canvasCap">Each cell is one block, face-on. Hover to see which block a cell is. Zoom to build square by square.</p>
         <div id="mapWrap"><canvas id="mapCanvas"></canvas><div id="inspectTip"></div></div>
       </div>
       <div class="list-card">
         <h3>Blocks you'll need</h3>
-        <p class="cap">Each row shows the verified colour and the real block texture side by side. Tap a row for close swaps.</p>
+        <p class="cap">Verified colour and the real block texture side by side. In Survival, each is tagged by whether you can get it at your stage. Tap a row for close swaps.</p>
         <div class="render-toggle" id="renderToggle">
           <button data-render="color" class="on">&#9703; Colour</button>
           <button data-render="texture">&#9638; Textures</button>
@@ -189,12 +218,13 @@
     </div>
     <div class="note" id="honestNote"></div>
   </section>
+
   <footer style="margin-top:50px;padding-top:24px;border-top:1px solid var(--line);font-family:'JetBrains Mono';font-size:11.5px;color:var(--dimmer);line-height:1.7">
     Built by <a href="https://www.vishkul.com" style="color:var(--dim)">Vishesh Kulshrestha</a> &middot; part of <a href="/tools/" style="color:var(--dim)">vishkul/tools</a><br>
-    Block colours are verified texture-colour values, not map-item colours. Block textures are from <a href="https://github.com/deathcap/ProgrammerArt" style="color:var(--dim)">ProgrammerArt</a> (CC-BY 4.0, original art, not Mojang's files) and cover classic blocks only. Survival stage grouping is a sensible guide, not an official ruling. Nothing is uploaded; the image is read in your browser and forgotten.
+    Block colours are verified texture-colour values, not map-item colours. Block textures are from <a href="https://github.com/deathcap/ProgrammerArt" style="color:var(--dim)">ProgrammerArt</a> (CC-BY 4.0, original art, not Mojang's files) and cover classic blocks only. Survival stage grouping is a sensible guide, not an official ruling. Build-helper amounts are rough estimates. Nothing is uploaded; the image is read in your browser and forgotten.<br><span style="color:var(--dimmer);opacity:.6">build v4 &middot; build helper + pixel art</span>
   </footer>
 </main>
-<script src="/tools/assets/mc-textures.js"></script>
-<script src="/tools/assets/mc-blocks.js"></script>
+<script src="/tools/assets/mc-textures.js?v=1782603774"></script>
+<script src="/tools/assets/mc-blocks.js?v=1782603774"></script>
 </body>
 </html>

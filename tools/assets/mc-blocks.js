@@ -149,16 +149,24 @@ function dist(r1,g1,b1,r2,g2,b2){
 
 /* ---------------- state ---------------- */
 const state={
-  mode:"flat", game:"creative", stage:5, width:64,
+  mode:"helper",            // helper (build helper) | pixel (pixel art)
+  game:"survival", stage:3, width:64,
   pref:"none", render:"color", version:"1.21",
   allow:new Set(FAMILIES.map(f=>f.key)), img:null,
+  onlyGettable:false,       // build helper: hide blocks not gettable at stage
+  bTall:20, bWide:12, bDepth:10,  // rough size inputs (blocks)
 };
 
 /* ---------------- active palette from all filters ---------------- */
 function activePalette(){
   let pool=BLOCKS.filter(b=>state.allow.has(b.fam));
-  pool=pool.filter(b=>vIndex(b.since)<=vIndex(state.version)); // version gate
-  if(state.game==="survival") pool=pool.filter(b=>b.stage<=state.stage);
+  pool=pool.filter(b=>vIndex(b.since)<=vIndex(state.version)); // version gate (always)
+  // Stage gating of the MATCHING pool:
+  //  - pixel art: hard-gate (you're placing real blocks, only offer gettable ones)
+  //  - build helper: do NOT hard-gate, so the build can want blocks you can't get yet,
+  //    and we tag them "not yet". Unless the user ticks "only show blocks I can get".
+  const hardGate = state.game==="survival" && (state.mode!=="helper" || state.onlyGettable);
+  if(hardGate) pool=pool.filter(b=>b.stage<=state.stage);
   if(state.pref&&state.pref!=="none"){
     const only=pool.filter(b=>b.fam===state.pref);
     if(only.length) pool=only;
@@ -199,14 +207,19 @@ function showFatal(msg){
 }
 window.addEventListener("error",e=>{ showFatal(e.message||"script error"); });
 
-// ---- mode toggle (flat vs reference) ----
+// ---- mode toggle (build helper vs pixel art) ----
 $("#modeToggle").addEventListener("click",e=>{
   const btn=e.target.closest("button"); if(!btn)return;
   state.mode=btn.dataset.mode;
   document.querySelectorAll("#modeToggle button").forEach(b=>b.classList.toggle("on",b===btn));
-  $("#modeSub").innerHTML = state.mode==="flat"
-    ? '<b>Flat build</b> \u2014 pixel art, walls, floors, facades: anything one block thick. You get a block map and <b>exact</b> counts, because every block is one cell in a flat grid.'
-    : '<b>3D reference</b> \u2014 building something with real depth (a house from a photo). A flat photo can\u2019t show a 3D structure, so this gives the <b>matched block palette</b> to build from, not a fake total.';
+  const helper = state.mode==="helper";
+  $("#modeSub").innerHTML = helper
+    ? '<b>Build helper</b> \u2014 for building a real 3D thing (a house, a tower) freehand from a reference. Tells you which blocks it uses, which you can get at your stage, and roughly how many. You build it by eye; this is your materials list.'
+    : '<b>Pixel art</b> \u2014 for building a flat picture of an image, one block thick. You get a block-by-block map and <b>exact</b> counts, because every block is one cell in a flat grid.';
+  // show/hide the size inputs (helper only) and width (pixel only)
+  $("#sizeBox").classList.toggle("hidden", !helper);
+  $("#widthBox").classList.toggle("hidden", helper);
+  if(lastResult) build();
 });
 
 // ---- render mode toggle (colour vs texture) ----
@@ -251,6 +264,19 @@ function loadImage(f){
 // ---- width slider ----
 const widthRange=$("#widthRange");
 widthRange.addEventListener("input",()=>{ state.width=+widthRange.value; $("#wLabel").textContent=state.width; updateEstDims(); });
+
+// ---- build-helper size inputs (tall / wide / depth) ----
+["Tall","Wide","Depth"].forEach(dim=>{
+  const el=$("#b"+dim); if(!el) return;
+  el.addEventListener("input",()=>{
+    const v=Math.max(1,Math.min(256,+el.value||1));
+    state["b"+dim]=v;
+    if(lastResult && state.mode==="helper") renderOutput();
+  });
+});
+// ---- only-gettable toggle ----
+const onlyGet=$("#onlyGet");
+if(onlyGet) onlyGet.addEventListener("change",()=>{ state.onlyGettable=onlyGet.checked; if(lastResult) build(); });
 function updateEstDims(){ if(!state.img)return;
   const h=Math.max(1,Math.round(state.width*state.img.height/state.img.width));
   $("#estDims").textContent=`build: ${state.width} \u00d7 ${h} blocks (${(state.width*h).toLocaleString()} cells)`;
@@ -271,8 +297,10 @@ if(verRange){
 $("#gameSeg").addEventListener("click",e=>{ const btn=e.target.closest("button"); if(!btn)return;
   state.game=btn.dataset.game;
   document.querySelectorAll("#gameSeg button").forEach(b=>b.classList.toggle("on",b===btn));
-  $("#stageWrap").classList.toggle("hidden",state.game!=="survival"); });
-$("#stageSel").addEventListener("change",e=>state.stage=+e.target.value);
+  $("#stageWrap").classList.toggle("hidden",state.game!=="survival");
+  $("#onlyGetWrap").classList.toggle("hidden",state.game!=="survival"||state.mode!=="helper");
+  if(lastResult) build(); });
+$("#stageSel").addEventListener("change",e=>{ state.stage=+e.target.value; if(lastResult) build(); });
 
 // ---- family picker ----
 const palettePick=$("#palettePick");
@@ -296,7 +324,10 @@ function build(){
   if(!state.img)return;
   const pool=activePalette();
   if(!pool.length){ alert("No blocks available with those filters. Allow more families, a later version, or a later stage."); return; }
-  const W=state.width, H=Math.max(1,Math.round(W*state.img.height/state.img.width));
+  // helper mode samples at a fixed resolution (we only need colour proportions);
+  // pixel-art mode uses the chosen build width (each cell is a real block).
+  const W = state.mode==="helper" ? 96 : state.width;
+  const H=Math.max(1,Math.round(W*state.img.height/state.img.width));
   const off=document.createElement("canvas"); off.width=W; off.height=H;
   const octx=off.getContext("2d"); octx.imageSmoothingEnabled=true;
   octx.drawImage(state.img,0,0,W,H);
@@ -316,6 +347,9 @@ function build(){
   lastResult={counts,W,H,cellBlock,cellAlts};
   renderOutput();
 }
+
+/* is a block gettable at the current survival stage? (creative = always) */
+function gettableNow(bl){ return state.game!=="survival" || bl.stage<=state.stage; }
 
 /* ---------------- render the block map + list ---------------- */
 let zoom=1, panX=0, panY=0;
@@ -379,52 +413,89 @@ function setupMapInteraction(){
 function renderOutput(){
   const {counts,W,H}=lastResult;
   $("#out").classList.add("show");
-  const isFlat=state.mode==="flat";
-  $("#refBanner").classList.toggle("show",!isFlat);
-  $("#canvasTitle").textContent=isFlat?"Block map":"Colour reference";
-  $("#canvasCap").textContent=isFlat
-    ? "Each cell is one block, face-on. Hover to see which block a cell is. Zoom to build row by row."
-    : "Closest-matching block colour per cell. Hover to inspect. Use it to read the palette, not as a literal build.";
+  const helper = state.mode==="helper";
 
-  drawMap();
-  setupMapInteraction();
+  // map: pixel-art only
+  $("#mapCard").classList.toggle("hidden", helper);
+  if(!helper){
+    $("#canvasTitle").textContent="Block map";
+    $("#canvasCap").textContent="Each cell is one block, face-on. Hover to see which block a cell is. Zoom to build square by square.";
+    drawMap(); setupMapInteraction();
+  }
 
   const rows=[...counts.values()].sort((a,b)=>b.count-a.count);
   const totalCells=rows.reduce((s,r)=>s+r.count,0);
+
+  // ---- compute amounts ----
+  // pixel art: exact cell counts. build helper: coverage% x rough volume from size inputs.
+  let roughTotal=0;
+  if(helper){
+    const w=Math.max(1,state.bWide), h=Math.max(1,state.bTall), d=Math.max(1,state.bDepth);
+    // rough hollow shell: 2 walls (w x h) + 2 walls (d x h) + roof-ish (w x d). honest ballpark.
+    roughTotal = Math.round(2*w*h + 2*d*h + w*d);
+  }
+
+  // ---- totals bar ----
   const tot=$("#totals");
-  if(isFlat){
+  if(helper){
+    const shown = state.onlyGettable ? rows.filter(r=>gettableNow(r.block)) : rows;
+    const gettableCount = rows.filter(r=>gettableNow(r.block)).length;
+    tot.innerHTML=`<div>materials <b>${shown.length}</b></div>
+      <div>gettable now <b>${gettableCount}</b>/${rows.length}</div>
+      <div>rough total <b>~${roughTotal.toLocaleString()}</b></div>
+      <div>stacks <b>~${Math.round(roughTotal/64).toLocaleString()}</b></div>`;
+  } else {
     tot.innerHTML=`<div>total blocks <b>${totalCells.toLocaleString()}</b></div>
       <div>types <b>${rows.length}</b></div><div>grid <b>${W}\u00d7${H}</b></div>
       <div>stacks <b>${Math.floor(totalCells/64).toLocaleString()}</b>+${totalCells%64}</div>`;
-  } else {
-    tot.innerHTML=`<div>palette <b>${rows.length}</b> blocks</div><div style="color:var(--dimmer)">counts hidden in reference mode</div>`;
   }
 
+  // ---- block list ----
   const list=$("#blockList"); list.innerHTML="";
   rows.forEach(r=>{
+    const pct = r.count/totalCells;
+    const get = gettableNow(r.block);
+    if(helper && state.onlyGettable && !get) return; // hide locked when toggled
+
     const row=document.createElement("div"); row.className="blockrow";
-    const pct=((r.count/totalCells)*100).toFixed(1);
-    // BOTH icon and colour swatch side by side
     const hasTex = r.block.tex && typeof BLOCK_TEXTURES!=="undefined" && BLOCK_TEXTURES[r.block.name];
     const texSwatch = hasTex
       ? `<img class="btex" src="data:image/png;base64,${BLOCK_TEXTURES[r.block.name]}" alt="">`
-      : `<span class="btex bnotex" title="no open texture for this block">\u2014</span>`;
+      : `<span class="btex bnotex" title="no open texture for this block">\u00b7</span>`;
+
+    // amount shown per mode
+    let amountHtml="";
+    if(helper){
+      const amt=Math.round(pct*roughTotal);
+      const tag = state.game==="survival"
+        ? (get ? `<span class="tag-get">can get</span>` : `<span class="tag-lock">not yet</span>`)
+        : "";
+      amountHtml=`${tag}<span class="bcount">~${amt.toLocaleString()}</span>`;
+    } else {
+      amountHtml=`<span class="bcount">\u00d7${r.count.toLocaleString()}<span class="bpct">${(pct*100).toFixed(1)}%</span></span>`;
+    }
+
     row.innerHTML=`<span class="swatch" style="background:${r.block.hex}" title="verified colour ${r.block.hex}"></span>
       ${texSwatch}
-      <div class="bname">${r.block.name}</div>
-      <div class="bcount">${isFlat?("\u00d7"+r.count.toLocaleString()):""}<span class="bpct">${isFlat?pct+"%":""}</span></div>`;
+      <div class="bname">${r.block.name}${helper?`<span class="bcov">${(pct*100).toFixed(0)}% of build</span>`:""}</div>
+      <div class="bright">${amountHtml}</div>`;
+    if(helper && !get) row.classList.add("locked");
+
     const alts=document.createElement("div"); alts.className="alts";
     const rep=lastResult.cellAlts.find(a=>a&&a[0]&&a[0].block.name===r.block.name);
     if(rep){ let inner='<div class="hint">closest swaps for this colour:</div>';
-      rep.slice(1).forEach(a=>{ inner+=`<div class="altrow"><span class="sw2" style="background:${a.block.hex}"></span>${a.block.name}</div>`; });
+      rep.slice(1).forEach(a=>{
+        const ag=gettableNow(a.block);
+        inner+=`<div class="altrow"><span class="sw2" style="background:${a.block.hex}"></span>${a.block.name}${state.game==="survival"?(ag?' <span class="tag-get sm">get</span>':' <span class="tag-lock sm">no</span>'):""}</div>`; });
       alts.innerHTML=inner; }
     row.addEventListener("click",()=>alts.classList.toggle("show"));
     list.appendChild(row); list.appendChild(alts);
   });
 
-  $("#honestNote").innerHTML=isFlat
-    ? `<b>Counts are exact</b> because a flat build is one block thick: every grid cell is one block. Transparent areas are skipped, not counted. Colours match verified in-game values; lighting and shaders shift them a little.`
-    : `<b>No total here</b> because one photo only shows a face or two of a 3D thing: a "total blocks" number would be invented. The <b>palette</b> is real, build the structure yourself and pull from this list. Want exact numbers? Switch to <b>Flat build</b> to count a single face.`;
+  // ---- honest note ----
+  $("#honestNote").innerHTML = helper
+    ? `<b>Amounts are rough.</b> They assume the build is solid-ish at the size you set (${state.bWide}\u00d7${state.bTall}\u00d7${state.bDepth}) and that materials sit in 3D roughly as they look in the photo. Real numbers depend on how you actually build it. The point is the <b>palette and proportions</b>: which blocks, which you can get now, and a ballpark of each.`
+    : `<b>Counts are exact</b> because pixel art is one block thick: every grid cell is one block. Transparent areas are skipped. Colours match verified in-game values; lighting and shaders shift them a little.`;
 
   $("#out").scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -432,12 +503,26 @@ function renderOutput(){
 // ---- copy as text ----
 $("#copyBtn").addEventListener("click",()=>{
   if(!lastResult)return;
-  const isFlat=state.mode==="flat";
+  const helper=state.mode==="helper";
   const rows=[...lastResult.counts.values()].sort((a,b)=>b.count-a.count);
-  let txt=isFlat?`Minecraft build \u00b7 ${lastResult.W}\u00d7${lastResult.H} blocks \u00b7 MC ${state.version}\n\n`:`Minecraft block palette (reference) \u00b7 MC ${state.version}\n\n`;
-  rows.forEach(r=>{ txt+= isFlat ? `${r.count}\u00d7 ${r.block.name}\n` : `${r.block.name}\n`; });
-  if(isFlat){ const total=rows.reduce((s,r)=>s+r.count,0);
-    txt+=`\nTotal: ${total} blocks (${Math.floor(total/64)} stacks + ${total%64})`; }
+  const totalCells=rows.reduce((s,r)=>s+r.count,0);
+  let txt;
+  if(helper){
+    const w=state.bWide,h=state.bTall,d=state.bDepth;
+    const roughTotal=Math.round(2*w*h+2*d*h+w*d);
+    txt=`Minecraft build helper \u00b7 ~${w}\u00d7${h}\u00d7${d} \u00b7 MC ${state.version}${state.game==="survival"?` \u00b7 stage ${state.stage}`:""}\n\n`;
+    rows.forEach(r=>{
+      if(state.onlyGettable && !gettableNow(r.block)) return;
+      const amt=Math.round(r.count/totalCells*roughTotal);
+      const mark = state.game==="survival" ? (gettableNow(r.block)?"[can get] ":"[not yet] ") : "";
+      txt+=`${mark}~${amt} ${r.block.name}\n`;
+    });
+    txt+=`\nRough total: ~${roughTotal} blocks (~${Math.round(roughTotal/64)} stacks). Estimates.`;
+  } else {
+    txt=`Minecraft pixel art \u00b7 ${lastResult.W}\u00d7${lastResult.H} blocks \u00b7 MC ${state.version}\n\n`;
+    rows.forEach(r=>{ txt+=`${r.count}\u00d7 ${r.block.name}\n`; });
+    txt+=`\nTotal: ${totalCells} blocks (${Math.floor(totalCells/64)} stacks + ${totalCells%64})`;
+  }
   txt+=`\n\nvia vishkul.com/tools`;
   navigator.clipboard.writeText(txt).then(()=>{ const b=$("#copyBtn"); const o=b.textContent;
     b.textContent="\u2713 copied"; setTimeout(()=>b.textContent=o,1400); });
