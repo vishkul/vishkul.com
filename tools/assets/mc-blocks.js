@@ -459,9 +459,15 @@ function renderOutput(){
 
     const row=document.createElement("div"); row.className="blockrow";
     const hasTex = r.block.tex && typeof BLOCK_TEXTURES!=="undefined" && BLOCK_TEXTURES[r.block.name];
-    const texSwatch = hasTex
-      ? `<img class="btex" src="data:image/png;base64,${BLOCK_TEXTURES[r.block.name]}" alt="">`
-      : `<span class="btex bnotex" title="no open texture for this block">\u00b7</span>`;
+    // ONE square per row, following the render toggle.
+    // Textures mode: show the texture (fall back to colour if the block has none).
+    // Colour mode: show the verified colour swatch.
+    let squareHtml;
+    if(state.render==="texture" && hasTex){
+      squareHtml=`<img class="btex" src="data:image/png;base64,${BLOCK_TEXTURES[r.block.name]}" alt="" title="${r.block.name}">`;
+    } else {
+      squareHtml=`<span class="swatch" style="background:${r.block.hex}" title="verified colour ${r.block.hex}"></span>`;
+    }
 
     // amount shown per mode
     let amountHtml="";
@@ -475,8 +481,7 @@ function renderOutput(){
       amountHtml=`<span class="bcount">\u00d7${r.count.toLocaleString()}<span class="bpct">${(pct*100).toFixed(1)}%</span></span>`;
     }
 
-    row.innerHTML=`<span class="swatch" style="background:${r.block.hex}" title="verified colour ${r.block.hex}"></span>
-      ${texSwatch}
+    row.innerHTML=`${squareHtml}
       <div class="bname">${r.block.name}${helper?`<span class="bcov">${(pct*100).toFixed(0)}% of build</span>`:""}</div>
       <div class="bright">${amountHtml}</div>`;
     if(helper && !get) row.classList.add("locked");

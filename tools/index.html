@@ -48,6 +48,8 @@
   .card.live:hover { border-color: var(--accent-line); transform: translateY(-2px); }
   .card.soon { opacity: 0.72; }
   .card-top { display: flex; align-items: center; gap: 12px; }
+  .tool-ico { width: 34px; height: 34px; flex-shrink: 0; border: 1px solid var(--accent-line); border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--accent-dim); }
+  .tool-ico svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .card-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
   .card-name .dimmer { color: var(--dimmer); font-weight: 400; }
   .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; }
@@ -117,7 +119,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>aeo-checker</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>aeo-checker</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">ChatGPT, Perplexity, and Claude are becoming the new front page. This scans any URL and scores how readable it is to those answer engines, then hands you a ranked list of fixes that actually move the needle.</p>
@@ -127,7 +129,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>brand-voice</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H7l-3 3z"/><path d="M8 9h8M8 12h5"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>brand-voice</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">Everyone claims their voice is "friendly and professional." This reads a site's actual copy and measures it: rhythm, formality, who it speaks to, energy, and the words it leans on. You get a profile to hand a writer or an AI, not a vibe.</p>
@@ -137,7 +139,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>cold-email</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>cold-email</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">Paste a cold email and get an honest teardown: a reply-readiness score, exactly what's killing your reply rate, and a prompt to rewrite it. Runs entirely in your browser.</p>
@@ -154,7 +156,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>brand-from-a-word</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>brand-from-a-word</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">Type one word and watch an algorithm build a whole brand around it: a color palette, a font pairing, a logo mark, and a voice direction, generated live and explained. No AI, no stock library, pure procedural design.</p>
@@ -164,7 +166,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>browser-x-ray</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>browser-x-ray</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">A privacy mirror: everything your browser quietly hands to every site you visit. Screen, GPU, installed fonts, battery, timezone, and more, with nothing ever leaving the page.</p>
@@ -174,7 +176,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>reverse-prompt</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M15 7l5 5-5 5"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>reverse-prompt</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">Paste AI-written text and it reconstructs the likely prompt behind it: the task, the tone, the format, the constraints. It cannot recover the real prompt, but it gets uncannily close.</p>
@@ -184,7 +186,7 @@
 
     <div class="card live">
       <div class="card-top">
-        <span class="card-name"><span class="dimmer">$ ./</span>pixel-to-blocks</span>
+        <span class="tool-ico"><svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg></span><span class="card-name"><span class="dimmer">$ ./</span>pixel-to-blocks</span>
         <span class="tag live">● LIVE</span>
       </div>
       <p class="card-desc">Drop or paste an image and it gets colour-matched, cell by cell, to real Minecraft blocks with verified colours. Exact counts for flat builds, a zoomable map you can read square by square, real CC-BY block textures, and version + Creative/Survival aware palettes. No AI, no API, just colour maths against a hand-checked block list.</p>
